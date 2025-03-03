@@ -1,47 +1,102 @@
 <script>
-  import svelteLogo from './assets/svelte.svg'
-  import viteLogo from '/vite.svg'
-  import Counter from './lib/Counter.svelte'
+  import Navbar from "./routes/Navbar.svelte";
+  import Seasons from "./routes/Seasons.svelte";
+  import AddSeason from "./routes/NewSeason.svelte";
+  import EditSeason from "./routes/EditSeason.svelte";
+  import Login from "./routes/Login.svelte";
+  import { onMount } from "svelte";
+
+  let page = "seasons";
+  let selectedSeasonId = null;
+  let isAuthenticated = false;
+
+  function goTo(newPage, id = null) {
+    page = newPage;
+    selectedSeasonId = id;
+  }
+
+  async function checkAuth() {
+    const token = localStorage.getItem("access_token");
+
+    if (!token) {
+        console.log("Nie si prihlásený");
+        isAuthenticated = false;
+        return;
+    }
+
+    const res = await fetch("http://localhost:8000/api/user", {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+    });
+
+    if (res.ok) {
+        isAuthenticated = true;
+    } else if (res.status === 401) {
+        console.log("Token expirovaný, skúšam obnoviť...");
+        await refreshAccessToken();
+    } else {
+        isAuthenticated = false;
+    }
+  }
+
+  async function refreshAccessToken() {
+      try {
+          const res = await fetch("http://localhost:8000/api/refresh", {
+              method: "POST",
+              credentials: "include",
+          });
+
+          if (res.ok) {
+              const data = await res.json();
+              localStorage.setItem("access_token", data.access_token);
+              isAuthenticated = true;
+          } else {
+              console.log("Refresh token je neplatný");
+              isAuthenticated = false;
+          }
+      } catch (error) {
+          console.error("Chyba pri obnove tokenu:", error);
+          isAuthenticated = false;
+      }
+  }
+
+  async function logout() {
+    await fetch("http://localhost:8000/api/logout", {
+        method: "POST",
+        credentials: "include",
+    });
+
+    localStorage.removeItem("access_token");
+    isAuthenticated = false;
+    goTo("login");
+  }
+
+
+
+  onMount(checkAuth);
 </script>
 
-<main>
-  <div>
-    <a href="https://vite.dev" target="_blank" rel="noreferrer">
-      <img src={viteLogo} class="logo" alt="Vite Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank" rel="noreferrer">
-      <img src={svelteLogo} class="logo svelte" alt="Svelte Logo" />
-    </a>
-  </div>
-  <h1>Vite + Svelte</h1>
+<Navbar {isAuthenticated} {goTo} {logout} />
 
-  <div class="card">
-    <Counter />
-  </div>
-
-  <p>
-    Check out <a href="https://github.com/sveltejs/kit#readme" target="_blank" rel="noreferrer">SvelteKit</a>, the official Svelte app framework powered by Vite!
-  </p>
-
-  <p class="read-the-docs">
-    Click on the Vite and Svelte logos to learn more
-  </p>
-</main>
+{#if page === "seasons"}
+  <Seasons {goTo} />
+{:else if page === "add-season"}
+  <AddSeason {goTo} />
+{:else if page === "edit-season"}
+  <EditSeason {selectedSeasonId} {goTo} />
+{:else if page === "login"}
+  <Login
+    on:loginSuccess={() => {
+      isAuthenticated = true;
+      goTo("seasons");
+    }}
+  />
+{/if}
 
 <style>
-  .logo {
-    height: 6em;
-    padding: 1.5em;
-    will-change: filter;
-    transition: filter 300ms;
-  }
-  .logo:hover {
-    filter: drop-shadow(0 0 2em #646cffaa);
-  }
-  .logo.svelte:hover {
-    filter: drop-shadow(0 0 2em #ff3e00aa);
-  }
-  .read-the-docs {
-    color: #888;
+  body {
+    margin: 0;
+    padding-top: 60px;
+    font-family: sans-serif;
   }
 </style>

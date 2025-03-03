@@ -15,9 +15,14 @@ use Illuminate\Support\Facades\Storage;
 class PostController extends Controller
 {
     public function index()
+{
+    return response()->json(Post::with(['category', 'season', 'address', 'gallery.images'])->get(), 200, [], JSON_PRETTY_PRINT);
+}
+
+
+    public function show($id)
     {
-        $posts = Post::with(['category', 'season', 'address', 'gallery.images'])->get();
-        return view('posts.index', compact('posts'));
+        return response()->json(Post::with(['category', 'season', 'address', 'gallery.images'])->findOrFail($id));
     }
 
     public function create()

@@ -10,12 +10,9 @@ use Illuminate\Http\Request;
 class CategoryController extends Controller
 {
     public function index()
-{
-    return view('admin_panel', [
-        'categories' => Category::with('image')->get(),
-        'seasons' => Season::with('image')->get(), // Pridaj sezóny
-    ]);
-}
+    {
+    return response()->json(Category::with('image'));
+    }
 
 
     public function store(Request $request)

@@ -42,7 +42,7 @@ services:
     - ./svelte/src:/usr/src/app/src
     - ./svelte/public:/usr/src/app/public
     ports:
-      - "8080:5173"
+      - "8080:8080"
     networks:
       - app-network
 
