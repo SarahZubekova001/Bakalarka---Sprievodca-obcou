@@ -11,59 +11,70 @@
   let isAuthenticated = false;
 
   function goTo(newPage, id = null) {
+    history.pushState({ page: newPage, id }, "", `#${newPage}${id ? `/${id}` : ""}`);
     page = newPage;
     selectedSeasonId = id;
+  }
+
+  // Pri načítaní stránky skontroluje URL a nastaví správnu stránku
+  function handlePopState(event) {
+    if (event.state) {
+      page = event.state.page;
+      selectedSeasonId = event.state.id;
+    } else {
+      page = "seasons"; // Defaultná stránka
+    }
   }
 
   async function checkAuth() {
     const token = localStorage.getItem("access_token");
 
     if (!token) {
-        console.log("Nie si prihlásený");
-        isAuthenticated = false;
-        return;
+      console.log("Nie si prihlásený");
+      isAuthenticated = false;
+      return;
     }
 
     const res = await fetch("http://localhost:8000/api/user", {
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: "include",
+      headers: { Authorization: `Bearer ${token}` },
+      credentials: "include",
     });
 
     if (res.ok) {
-        isAuthenticated = true;
+      isAuthenticated = true;
     } else if (res.status === 401) {
-        console.log("Token expirovaný, skúšam obnoviť...");
-        await refreshAccessToken();
+      console.log("Token expirovaný, skúšam obnoviť...");
+      await refreshAccessToken();
     } else {
-        isAuthenticated = false;
+      isAuthenticated = false;
     }
   }
 
   async function refreshAccessToken() {
-      try {
-          const res = await fetch("http://localhost:8000/api/refresh", {
-              method: "POST",
-              credentials: "include",
-          });
+    try {
+      const res = await fetch("http://localhost:8000/api/refresh", {
+        method: "POST",
+        credentials: "include",
+      });
 
-          if (res.ok) {
-              const data = await res.json();
-              localStorage.setItem("access_token", data.access_token);
-              isAuthenticated = true;
-          } else {
-              console.log("Refresh token je neplatný");
-              isAuthenticated = false;
-          }
-      } catch (error) {
-          console.error("Chyba pri obnove tokenu:", error);
-          isAuthenticated = false;
+      if (res.ok) {
+        const data = await res.json();
+        localStorage.setItem("access_token", data.access_token);
+        isAuthenticated = true;
+      } else {
+        console.log("Refresh token je neplatný");
+        isAuthenticated = false;
       }
+    } catch (error) {
+      console.error("Chyba pri obnove tokenu:", error);
+      isAuthenticated = false;
+    }
   }
 
   async function logout() {
     await fetch("http://localhost:8000/api/logout", {
-        method: "POST",
-        credentials: "include",
+      method: "POST",
+      credentials: "include",
     });
 
     localStorage.removeItem("access_token");
@@ -71,9 +82,11 @@
     goTo("login");
   }
 
+  onMount(() => {
+    checkAuth();
+    window.addEventListener("popstate", handlePopState);
+  });
 
-
-  onMount(checkAuth);
 </script>
 
 <Navbar {isAuthenticated} {goTo} {logout} />
