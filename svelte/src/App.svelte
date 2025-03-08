@@ -4,25 +4,30 @@
   import AddSeason from "./routes/NewSeason.svelte";
   import EditSeason from "./routes/EditSeason.svelte";
   import Login from "./routes/Login.svelte";
+
+  import Restaurants from "./routes/Restaurants.svelte";
+  import AddRestaurant from "./routes/NewRestaurant.svelte";
+  import EditRestaurant from "./routes/EditRestaurant.svelte";
+  import DetailRestaurant from "./routes/DetailRestaurant.svelte";
+
   import { onMount } from "svelte";
 
   let page = "seasons";
-  let selectedSeasonId = null;
+  let currentId = null;
   let isAuthenticated = false;
 
   function goTo(newPage, id = null) {
     history.pushState({ page: newPage, id }, "", `#${newPage}${id ? `/${id}` : ""}`);
     page = newPage;
-    selectedSeasonId = id;
+    currentId = id;
   }
 
-  // Pri načítaní stránky skontroluje URL a nastaví správnu stránku
   function handlePopState(event) {
     if (event.state) {
       page = event.state.page;
-      selectedSeasonId = event.state.id;
+      currentId = event.state.id;
     } else {
-      page = "seasons"; // Defaultná stránka
+      page = "seasons";
     }
   }
 
@@ -92,11 +97,19 @@
 <Navbar {isAuthenticated} {goTo} {logout} />
 
 {#if page === "seasons"}
-  <Seasons {goTo} />
+  <Seasons {goTo} {isAuthenticated}/>
 {:else if page === "add-season"}
   <AddSeason {goTo} />
 {:else if page === "edit-season"}
-  <EditSeason {selectedSeasonId} {goTo} />
+  <EditSeason selectedSeasonId={currentId} {goTo} />
+{:else if page === "add-restaurant"}
+   <AddRestaurant {goTo} />
+{:else if page === "edit-restaurant"}
+  <EditRestaurant restaurantId={currentId} {goTo}/>
+{:else if page === "restaurant-detail"}
+  <DetailRestaurant restaurantId={currentId} />
+ {:else if page === "restaurants"}
+  <Restaurants {goTo} {isAuthenticated}/>
 {:else if page === "login"}
   <Login
     on:loginSuccess={() => {

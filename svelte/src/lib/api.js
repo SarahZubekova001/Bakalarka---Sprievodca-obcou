@@ -66,3 +66,45 @@ export async function updateCategory(id, formData) {
 export async function deleteCategory(id) {
     await fetch(`http://localhost:8000/api/categories/${id}`, { method: "DELETE" }); 
 }
+
+export async function fetchRestaurant(id) {
+    const response = await fetch(`http://localhost:8000/api/restaurants/${id}`);
+    if (!response.ok) {
+      throw new Error(`Nepodarilo sa načítať reštauráciu (HTTP ${response.status})`);
+    }
+    return response.json();
+  }
+  
+
+export async function fetchRestaurants() {
+    const response = await fetch("http://localhost:8000/api/restaurants"); 
+    return response.json();
+}
+
+export async function createRestaurant(formData) {
+    const response = await fetch("http://localhost:8000/api/restaurants", { 
+        method: "POST",
+        body: formData,
+    });
+    return response.json();
+}
+
+export async function updateRestaurant(id, formData) {
+    formData.append('_method', 'PUT'); 
+
+    const response = await fetch(`http://localhost:8000/api/restaurants/${id}`, {
+        method: "POST", 
+        body: formData,
+        headers: {
+            "Accept": "application/json",
+            "X-Requested-With": "XMLHttpRequest"
+        }
+    });
+
+    return response.json();
+}
+
+
+export async function deleteRestaurant(id) {
+    await fetch(`http://localhost:8000/api/restaurants/${id}`, { method: "DELETE" }); 
+}
