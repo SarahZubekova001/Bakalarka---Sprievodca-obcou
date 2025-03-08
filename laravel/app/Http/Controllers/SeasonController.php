@@ -61,12 +61,12 @@ class SeasonController extends Controller
                 'id_gallery' => null,
             ]);
 
-            // 🔹 Najprv aktualizuj id_image, aby odkazoval na nový obrázok
+            
             $oldImage = $season->image;
             $season->id_image = $newImage->id;
             $season->save();
 
-            // 🔹 Potom vymaž starý obrázok (ak existuje)
+            
             if ($oldImage) {
                 Storage::disk('public')->delete($oldImage->path);
                 $oldImage->delete();
