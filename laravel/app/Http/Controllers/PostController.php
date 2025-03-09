@@ -14,16 +14,29 @@ use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
-    public function index()
-{
-    return response()->json(Post::with(['category', 'season', 'address', 'gallery.images'])->get(), 200, [], JSON_PRETTY_PRINT);
-}
+    public function index(Request $request)
+    {
+        $query = Post::with(['category', 'season', 'address', 'gallery.images']);
 
+        if ($request->filled('season_id')) {
+            $query->where('id_season', $request->season_id);
+        }
 
+        if ($request->filled('category_id')) {
+            $query->where('id_category', $request->category_id);
+        }
+
+        $posts = $query->get();
+
+        return response()->json($posts, 200, [], JSON_PRETTY_PRINT);
+    }
+
+    
     public function show($id)
     {
-        return response()->json(Post::with(['category', 'season', 'address', 'gallery.images'])->findOrFail($id));
+        return response()->json(Post::with(['category', 'season', 'address.town', 'gallery.images'])->findOrFail($id));
     }
+    
 
     public function create()
     {
@@ -118,6 +131,15 @@ class PostController extends Controller
             'images' => 'nullable|array', 
             'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
         ]);
+        $town = Town::where('postal_code', $validated['postal_code'])->first();
+        if ($town) {
+            $town->update(['name' => $validated['town']]);
+        } else {
+            $town = Town::create([
+                'postal_code' => $validated['postal_code'],
+                'name' => $validated['town']
+            ]);
+        }
 
         $address = Address::findOrFail($post->id_address);
         $address->update([

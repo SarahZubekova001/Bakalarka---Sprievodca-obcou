@@ -10,41 +10,100 @@
   import EditRestaurant from "./routes/EditRestaurant.svelte";
   import DetailRestaurant from "./routes/DetailRestaurant.svelte";
 
+  import Categories from "./routes/Categories.svelte";
+  import AddCategory from "./routes/NewCategory.svelte";
+  import EditCategory from "./routes/EditCategory.svelte";
+
+  import Posts from "./routes/Posts.svelte";
+  import AddPost from "./routes/NewPost.svelte";
+  import EditPost from "./routes/EditPost.svelte";
+  import DetailPosts from "./routes/DetailPosts.svelte";
+  
+
   import { onMount } from "svelte";
 
-  let page = "seasons";
-  let currentId = null;
+  let page = "seasons"; // Defaultná hodnota
+  let currentId = null; // Pre stránky, kde stačí jedno ID (sezóny, reštaurácie, edit atď.)
+  let currentSeasonId = null; // Pre filter príspevkov (ak potrebuješ sezónu)
+  let currentCategoryId = null; // Pre filter príspevkov podľa kategórie
   let isAuthenticated = false;
 
+  // Aktualizácia stavu z URL
+  function updatePageFromUrl() {
+    let hash = window.location.hash.slice(1); // odstráni '#'
+    if (!hash) {
+      page = "seasons";
+      currentId = null;
+      currentSeasonId = null;
+      currentCategoryId = null;
+      return;
+    }
+    const parts = hash.split("/");
+    page = parts[0] || "seasons";
+
+    // Ak je stránka "posts", očakávame dva parametre: seasonId a categoryId.
+    if (page === "posts" && parts.length >= 3) {
+      currentSeasonId = parts[1];
+      currentCategoryId = parts[2];
+    } else {
+      currentId = parts.length > 1 ? parts[1] : null;
+      currentSeasonId = null;
+      currentCategoryId = null;
+    }
+  }
+
   function goTo(newPage, id = null) {
+  // Rozlíšime, či `id` je obyčajné číslo/string, alebo objekt s parametrami
+  if (typeof id === "object" && id !== null) {
+    // Nastavíme parametre
+    currentSeasonId = id.seasonId ?? null;
+    currentCategoryId = id.categoryId ?? null;
+
+    // Zostavíme URL: #posts/SEASON_ID/CATEGORY_ID (podľa potreby)
+    let url = `#${newPage}`;
+    if (currentSeasonId) url += `/${currentSeasonId}`;
+    if (currentCategoryId) url += `/${currentCategoryId}`;
+
+    history.pushState(
+      { page: newPage, seasonId: currentSeasonId, categoryId: currentCategoryId },
+      "",
+      url
+    );
+    page = newPage;
+  } else {
+    // Pôvodná logika pre "obyčajné" ID
+    currentId = id;
     history.pushState({ page: newPage, id }, "", `#${newPage}${id ? `/${id}` : ""}`);
     page = newPage;
-    currentId = id;
   }
+}
 
   function handlePopState(event) {
     if (event.state) {
-      page = event.state.page;
-      currentId = event.state.id;
+      if (event.state.page === "posts") {
+        page = event.state.page;
+        currentSeasonId = event.state.seasonId;
+        currentCategoryId = event.state.categoryId;
+      } else {
+        page = event.state.page;
+        currentId = event.state.id;
+      }
     } else {
-      page = "seasons";
+      updatePageFromUrl();
     }
   }
 
   async function checkAuth() {
     const token = localStorage.getItem("access_token");
-
     if (!token) {
       console.log("Nie si prihlásený");
       isAuthenticated = false;
       return;
     }
-
     const res = await fetch("http://localhost:8000/api/user", {
       headers: { Authorization: `Bearer ${token}` },
-      credentials: "include",
+      credentials: "include"
     });
-
     if (res.ok) {
       isAuthenticated = true;
     } else if (res.status === 401) {
@@ -59,9 +118,8 @@
     try {
       const res = await fetch("http://localhost:8000/api/refresh", {
         method: "POST",
-        credentials: "include",
+        credentials: "include"
       });
-
       if (res.ok) {
         const data = await res.json();
         localStorage.setItem("access_token", data.access_token);
@@ -79,19 +137,18 @@
   async function logout() {
     await fetch("http://localhost:8000/api/logout", {
       method: "POST",
-      credentials: "include",
+      credentials: "include"
     });
-
     localStorage.removeItem("access_token");
     isAuthenticated = false;
     goTo("login");
   }
 
   onMount(() => {
+    updatePageFromUrl(); // Načítanie stránky podľa URL pri prvom spustení
     checkAuth();
     window.addEventListener("popstate", handlePopState);
   });
-
 </script>
 
 <Navbar {isAuthenticated} {goTo} {logout} />
@@ -102,21 +159,36 @@
   <AddSeason {goTo} />
 {:else if page === "edit-season"}
   <EditSeason selectedSeasonId={currentId} {goTo} />
+
 {:else if page === "add-restaurant"}
-   <AddRestaurant {goTo} />
+  <AddRestaurant {goTo} />
 {:else if page === "edit-restaurant"}
   <EditRestaurant restaurantId={currentId} {goTo}/>
 {:else if page === "restaurant-detail"}
   <DetailRestaurant restaurantId={currentId} />
- {:else if page === "restaurants"}
+{:else if page === "restaurants"}
   <Restaurants {goTo} {isAuthenticated}/>
+
+{:else if page === "categories"}
+  <Categories {goTo} {isAuthenticated}/>
+{:else if page === "add-category"}
+  <AddCategory {goTo} />
+{:else if page === "edit-category"}
+  <EditCategory selectedCategoryId={currentId} {goTo}/>
+
+{:else if page === "posts"}
+  <Posts {goTo} {isAuthenticated} seasonId={currentSeasonId} categoryId={currentCategoryId} />
+{:else if page === "add-post"}
+  <AddPost {goTo} />
+{:else if page === "edit-post"}
+  <EditPost postId={currentId} {goTo}/>
+{:else if page === "post-detail"}
+  <DetailPosts postId={currentId} />
 {:else if page === "login"}
-  <Login
-    on:loginSuccess={() => {
-      isAuthenticated = true;
-      goTo("seasons");
-    }}
-  />
+  <Login on:loginSuccess={() => {
+    isAuthenticated = true;
+    goTo("seasons");
+  }}/>
 {/if}
 
 <style>

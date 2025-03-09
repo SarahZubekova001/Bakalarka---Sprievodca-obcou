@@ -1,49 +1,79 @@
 <script>
+  import { onMount } from "svelte";
   export let isAuthenticated = false;
   export let logout;
   export let goTo;
 
-  export let seasons = ["Leto", "Zima"];
+  let seasons = [];
+  let categories = [];
+
+  async function fetchSeasons() {
+    try {
+      const res = await fetch("http://localhost:8000/api/seasons");
+      if (!res.ok) throw new Error("Nepodarilo sa načítať sezóny");
+      seasons = await res.json();
+    } catch (err) {
+      console.error("Chyba pri načítaní sezón:", err);
+    }
+  }
+
+  async function fetchCategories() {
+    try {
+      const res = await fetch("http://localhost:8000/api/categories");
+      if (!res.ok) throw new Error("Nepodarilo sa načítať kategórie");
+      categories = await res.json();
+    } catch (err) {
+      console.error("Chyba pri načítaní kategórií:", err);
+    }
+  }
+
+  onMount(() => {
+    fetchSeasons();
+    fetchCategories();
+  });
 </script>
 
 <nav class="navbar">
   <div class="nav-container">
-    <!-- Logo smeruje na "seasons" -->
     <a class="logo" on:click={() => goTo("seasons")}>Obec</a>
 
     <ul class="nav-links">
-      <!-- Dropdown "Sezóny" -->
+      <!-- Dynamické sezóny -->
       <li class="dropdown">
-        <a class="dropbtn" on:click={() => goTo("seasons")}>
-          Sezóny
-        </a>
-        <!-- Dropdown menu sa zobrazí len pri hover (v CSS) -->
+        <a class="dropbtn" on:click={() => goTo("seasons")}>Sezóny</a>
         <ul class="dropdown-content">
           {#each seasons as season}
             <li>
-              <a on:click={() => goTo(`season/${season}`)}>
-                {season}
-              </a>
+              <a on:click={() => goTo(`season/${season.id}`)}>{season.name}</a>
             </li>
           {/each}
           <li>
-            <a on:click={() => goTo("add-season")}>
-              Pridať sezónu
-            </a>
+            <a on:click={() => goTo("add-season")}>Pridať sezónu</a>
           </li>
         </ul>
       </li>
 
-      <!-- Dropdown "Reštaurácie" -->
+      <!-- Dynamické kategórie -->
       <li class="dropdown">
-        <a class="dropbtn" on:click={() => goTo("restaurants")}>
-          Reštaurácie
-        </a>
+        <a class="dropbtn" on:click={() => goTo("categories")}>Kategórie</a>
+        <ul class="dropdown-content">
+          {#each categories as category}
+            <li>
+              <a on:click={() => goTo(`category/${category.id}`)}>{category.name}</a>
+            </li>
+          {/each}
+          <li>
+            <a on:click={() => goTo("add-category")}>Pridať kategóriu</a>
+          </li>
+        </ul>
+      </li>
+
+      <!-- Reštaurácie -->
+      <li class="dropdown">
+        <a class="dropbtn" on:click={() => goTo("restaurants")}>Reštaurácie</a>
         <ul class="dropdown-content">
           <li>
-            <a on:click={() => goTo("add-restaurant")}>
-              Pridať reštauráciu
-            </a>
+            <a on:click={() => goTo("add-restaurant")}>Pridať reštauráciu</a>
           </li>
         </ul>
       </li>
@@ -51,15 +81,11 @@
       <!-- Prihlásiť / Odhlásiť -->
       {#if isAuthenticated}
         <li>
-          <button class="auth-button" on:click={logout}>
-            Odhlásiť
-          </button>
+          <button class="auth-button" on:click={logout}>Odhlásiť</button>
         </li>
       {:else}
         <li>
-          <button class="auth-button" on:click={() => goTo("login")}>
-            Prihlásiť
-          </button>
+          <button class="auth-button" on:click={() => goTo("login")}>Prihlásiť</button>
         </li>
       {/if}
     </ul>
@@ -114,13 +140,11 @@
     cursor: pointer;
   }
 
-  /* Základ pre dropdown */
   .dropdown {
     position: relative;
     display: inline-block;
   }
 
-  /* Hlavný link (Sezóny/Reštaurácie) – to, na čo klikneš a presmeruješ sa */
   .dropbtn {
     background: transparent;
     border: none;
@@ -131,9 +155,8 @@
     font-size: 1rem;
   }
 
-  /* Obsah dropdownu, predvolene skrytý */
   .dropdown-content {
-    display: none;             /* Skryté, kým nenastane hover */
+    display: none;
     position: absolute;
     background-color: #fff;
     min-width: 160px;
@@ -145,7 +168,6 @@
     padding: 0;
   }
 
-  /* Zobrazí sa len pri hover na .dropdown kontajner */
   .dropdown:hover .dropdown-content {
     display: block;
   }
@@ -161,7 +183,6 @@
     background-color: #f0f0f0;
   }
 
-  /* Tlačidlo prihlásenia/odhlásenia */
   .auth-button {
     background: #fff;
     color: #333;

@@ -47,6 +47,15 @@ export async function fetchCategories() {
     return response.json();
 }
 
+export async function fetchCategory(id) {
+    const response = await fetch(`http://localhost:8000/api/categories/${id}`);
+    if (!response.ok) {
+        throw new Error(`Nepodarilo sa načítať kategóriu (HTTP ${response.status})`);
+    }
+    return response.json();
+}
+
+
 export async function createCategory(formData) {
     const response = await fetch("http://localhost:8000/api/categories", { 
         method: "POST",
