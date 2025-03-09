@@ -3,6 +3,8 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\SeasonController;
 use App\Http\Controllers\RestaurantController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\PostController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/', function () {
@@ -22,4 +24,6 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('api')->prefix('api')->group(function () {
     Route::apiResource('seasons', SeasonController::class);
     Route::apiResource('restaurants', RestaurantController::class);
+    Route::apiResource('categories', CategoryController::class);
+    Route::apiResource('posts', PostController::class);
 });
