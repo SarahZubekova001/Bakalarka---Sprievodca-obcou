@@ -1,6 +1,5 @@
 <script>
   import { onMount } from "svelte";
-
   export let restaurantId;
 
   let restaurant = null;
@@ -10,8 +9,12 @@
   let lng = null;
   let mapUrl = "";
 
+  let currentIndex = 0;
+  let interval;
+
   onMount(async () => {
     await fetchRestaurantDetail();
+    startAutoSlide();
   });
 
   async function fetchRestaurantDetail() {
@@ -22,7 +25,7 @@
         throw new Error(`Nepodarilo sa načítať reštauráciu (HTTP ${res.status}).`);
       }
       restaurant = await res.json();
-      await fetchCoordinates(); 
+      await fetchCoordinates();
     } catch (err) {
       errorMessage = err.message;
       console.error("Chyba pri načítaní:", err);
@@ -35,7 +38,6 @@
     if (!restaurant || !restaurant.address) return "";
     const addr = restaurant.address;
     let cityName = addr.town ? addr.town.name : "";
-
     
     return `${addr.street} ${addr.descriptive_number}, ${addr.postal_code} ${cityName}, Slovakia`;
   }
@@ -60,6 +62,22 @@
       console.error("Chyba pri načítaní geokódovania:", error);
     }
   }
+
+  function prevSlide() {
+    currentIndex = (currentIndex - 1 + restaurant.gallery.images.length) % restaurant.gallery.images.length;
+  }
+
+  function nextSlide() {
+    currentIndex = (currentIndex + 1) % restaurant.gallery.images.length;
+  }
+
+  function startAutoSlide() {
+    if (restaurant && restaurant.gallery && restaurant.gallery.images.length > 1) {
+      interval = setInterval(() => {
+        nextSlide();
+      }, 4000);
+    }
+  }
 </script>
 
 {#if isLoading}
@@ -70,16 +88,24 @@
   <p>Reštaurácia sa nenašla.</p>
 {:else}
   <div class="detail-container">
+    <!-- Luxusný slider -->
     {#if restaurant.gallery && restaurant.gallery.images && restaurant.gallery.images.length > 0}
-      <img class="main-image"
-        src={`http://localhost:8000/storage/${restaurant.gallery.images[0].path}`}
-        alt={restaurant.name}
-      />
+      <div class="slider-container">
+        <div class="slider">
+          {#each restaurant.gallery.images as image, i}
+            <img
+              class="slide"
+              src={`http://localhost:8000/storage/${image.path}`}
+              alt={restaurant.name}
+              style="transform: translateX({-100 * currentIndex}%);"
+            />
+          {/each}
+        </div>
+        <button class="prev" on:click={prevSlide}>❮</button>
+        <button class="next" on:click={nextSlide}>❯</button>
+      </div>
     {:else}
-      <img class="main-image"
-        src="placeholder-image.jpg"
-        alt="Obrázok nie je dostupný"
-      />
+      <img class="main-image" src="placeholder-image.jpg" alt="Obrázok nie je dostupný" />
     {/if}
 
     <h1>{restaurant.name}</h1>
@@ -100,22 +126,6 @@
 
     <p><strong>Adresa:</strong> {getFullAddress()}</p>
 
-    <h2>Galéria</h2>
-    <div class="gallery">
-      {#if restaurant.gallery && restaurant.gallery.images && restaurant.gallery.images.length > 0}
-        {#each restaurant.gallery.images as image, i}
-          {#if i > 0}
-            <img class="gallery-img"
-              src={`http://localhost:8000/storage/${image.path}`}
-              alt="Obrázok z galérie"
-            />
-          {/if}
-        {/each}
-      {:else}
-        <p>Galéria nemá žiadne obrázky.</p>
-      {/if}
-    </div>
-
     <h2>Mapa</h2>
     {#if lat && lng}
       <iframe width="600" height="450" style="border:0" loading="lazy" allowfullscreen src={mapUrl}></iframe>
@@ -133,28 +143,65 @@
     font-family: sans-serif;
   }
 
-  .main-image {
+  .slider-container {
+    position: relative;
     width: 100%;
-    max-height: 400px;
-    object-fit: cover;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    max-width: 600px;
+    margin: auto;
+    overflow: hidden;
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
   }
 
-  .gallery {
+  .slider {
     display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 2rem;
+    transition: transform 0.5s ease-in-out;
+    width: 100%;
   }
 
-  .gallery-img {
-    width: 200px;
-    height: 150px;
+  .slide {
+    width: 100%;
+    height: 350px;
     object-fit: cover;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    flex-shrink: 0;
+  }
+
+  .prev, .next {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 20px;
+    border-radius: 50%;
+    transition: background 0.3s;
+  }
+
+  .prev:hover, .next:hover {
+    background: rgba(0, 0, 0, 0.8);
+  }
+
+  .prev {
+    left: 10px;
+  }
+
+  .next {
+    right: 10px;
+  }
+
+  h1 {
+    font-size: 26px;
+    margin-top: 1rem;
+    color: #333;
+  }
+
+  p {
+    font-size: 18px;
+    margin: 5px 0;
+    color: #555;
   }
 
   iframe {

@@ -95,6 +95,15 @@ class RestaurantController extends Controller
         'images' => 'nullable|array',
         'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
     ]);
+    $town = Town::where('postal_code', $validated['postal_code'])->first();
+    if ($town) {
+        $town->update(['name' => $validated['town']]);
+    } else {
+        $town = Town::create([
+            'postal_code' => $validated['postal_code'],
+            'name' => $validated['town']
+        ]);
+    }
 
     $address = Address::findOrFail($restaurant->id_address);
     $address->update([
@@ -132,7 +141,6 @@ public function destroy($id)
         try {
             $restaurant = Restaurant::findOrFail($id);
 
-            // Ak má galériu, najskôr vymažeme obrázky
             if ($restaurant->gallery) {
                 foreach ($restaurant->gallery->images as $image) {
                     Storage::disk('public')->delete($image->path);

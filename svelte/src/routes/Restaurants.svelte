@@ -153,7 +153,6 @@
           <button class="edit" on:click={() => goTo("edit-restaurant", restaurant.id)} on:click|stopPropagation>
             📝 Upraviť
           </button>
-
           <button class="delete" on:click={() => deleteRestaurant(restaurant.id)} on:click|stopPropagation>
             🗑️ Vymazať
           </button>
