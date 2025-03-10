@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   export let goTo;
   export let isAuthenticated;
+  export let userRole;
   
   let restaurants = [];
 
@@ -148,7 +149,7 @@
       {/if}
 
       <h2>{restaurant.name}</h2>
-      {#if isAuthenticated}
+      {#if isAuthenticated&& userRole === 'admin'} 
         <div class="buttons">
           <button class="edit" on:click={() => goTo("edit-restaurant", restaurant.id)} on:click|stopPropagation>
             📝 Upraviť

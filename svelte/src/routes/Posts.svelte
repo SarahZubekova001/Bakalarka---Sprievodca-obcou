@@ -5,6 +5,7 @@
   export let categoryId;
   export let goTo;
   export let isAuthenticated;
+  export let userRole;
 
   let posts = [];
   let isLoading = true;
@@ -169,7 +170,7 @@
         />
       {/if}
         <h2>{post.name}</h2>
-        {#if isAuthenticated}
+        {#if isAuthenticated&& userRole === 'admin'} 
           <div class="buttons">
             <button on:click={() => goTo("edit-post", post.id)} on:click|stopPropagation>📝 Upraviť</button>
             <button on:click={() => deletePost(post.id)}>🗑️ Vymazať</button>

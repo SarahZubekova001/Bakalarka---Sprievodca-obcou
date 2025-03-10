@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   export let goTo;
   export let isAuthenticated; 
+  export let userRole;
 
   let seasons = [];
 
@@ -134,7 +135,7 @@
       <img src={`http://localhost:8000/storage/${season.image.path}`} alt={season.name} />
       <h2>{season.name}</h2>
 
-      {#if isAuthenticated}
+      {#if isAuthenticated&& userRole === 'admin'} 
         <div class="buttons">
           <button class="edit" on:click={() => goTo('edit-season', season.id)} on:click|stopPropagation>
             📝 Upraviť

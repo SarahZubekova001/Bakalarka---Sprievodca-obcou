@@ -3,6 +3,7 @@
   export let isAuthenticated = false;
   export let logout;
   export let goTo;
+  export let userRole;
 
   let seasons = [];
   let categories = [];
@@ -47,9 +48,11 @@
               <a on:click={() => goTo(`season/${season.id}`)}>{season.name}</a>
             </li>
           {/each}
-          <li>
-            <a on:click={() => goTo("add-season")}>Pridať sezónu</a>
-          </li>
+          {#if isAuthenticated && userRole === "admin"}
+            <li>
+              <a on:click={() => goTo("add-season")}>Pridať sezónu</a>
+            </li>
+          {/if}
         </ul>
       </li>
 
@@ -62,9 +65,11 @@
               <a on:click={() => goTo(`category/${category.id}`)}>{category.name}</a>
             </li>
           {/each}
-          <li>
-            <a on:click={() => goTo("add-category")}>Pridať kategóriu</a>
-          </li>
+          {#if isAuthenticated && userRole === "admin"}
+            <li>
+              <a on:click={() => goTo("add-category")}>Pridať kategóriu</a>
+            </li>
+          {/if}
         </ul>
       </li>
 
@@ -72,9 +77,11 @@
       <li class="dropdown">
         <a class="dropbtn" on:click={() => goTo("restaurants")}>Reštaurácie</a>
         <ul class="dropdown-content">
-          <li>
-            <a on:click={() => goTo("add-restaurant")}>Pridať reštauráciu</a>
-          </li>
+          {#if isAuthenticated && userRole === "admin"}
+            <li>
+              <a on:click={() => goTo("add-restaurant")}>Pridať reštauráciu</a>
+            </li>
+          {/if}
         </ul>
       </li>
 
@@ -86,6 +93,7 @@
       {:else}
         <li>
           <button class="auth-button" on:click={() => goTo("login")}>Prihlásiť</button>
+          <button class="auth-button" on:click={() => goTo("register")}>Registrovat sa</button>
         </li>
       {/if}
     </ul>
@@ -98,7 +106,7 @@
     top: 0;
     left: 0;
     width: 100%;
-    background: linear-gradient(135deg, rgb(88, 193, 181) 0%, #e1f6ff 100%);
+    background: linear-gradient(135deg, rgb(108, 210, 198) 0%, #e1f6ff 100%);
     color: #333;
     padding: 12px 20px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
