@@ -12,7 +12,7 @@
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
-            credentials: "include", // Kvôli refresh tokenu
+            credentials: "include", 
         });
 
         if (res.ok) {

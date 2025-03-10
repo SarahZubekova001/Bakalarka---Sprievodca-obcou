@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 // });
 
 Route::middleware('guest')->group(function () {
-    Route::post('api/register', [RegisteredUserController::class, 'store']);
+    //Route::post('api/register', [RegisteredUserController::class, 'store']);
     Route::post('api/login', [AuthenticatedSessionController::class, 'store'])->name('login');
 });
 

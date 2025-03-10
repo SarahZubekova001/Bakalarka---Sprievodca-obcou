@@ -3,6 +3,7 @@
   export let goTo;
   export let isAuthenticated;
   export let seasonId = null;
+  export let userRole;
 
   let categories = [];
   let isLoading = true;
@@ -162,7 +163,7 @@
         {/if}
         <h2>{category.name}</h2>
 
-        {#if isAuthenticated}
+        {#if isAuthenticated&& userRole === 'admin'} 
           <div class="buttons">
             <button class="edit" on:click={() => goTo('edit-category', category.id)} on:click|stopPropagation>📝 Upraviť</button>
             <button class="delete" on:click={() => deleteCategory(category.id)} on:click|stopPropagation>🗑️ Vymazať</button>

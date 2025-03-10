@@ -4,6 +4,7 @@
   import AddSeason from "./routes/NewSeason.svelte";
   import EditSeason from "./routes/EditSeason.svelte";
   import Login from "./routes/Login.svelte";
+  import Register from "./routes/Register.svelte";
 
   import Restaurants from "./routes/Restaurants.svelte";
   import AddRestaurant from "./routes/NewRestaurant.svelte";
@@ -22,13 +23,13 @@
 
   import { onMount } from "svelte";
 
-  let page = "seasons"; // Defaultná hodnota
-  let currentId = null; // Pre stránky, kde stačí jedno ID (sezóny, reštaurácie, edit atď.)
-  let currentSeasonId = null; // Pre filter príspevkov (ak potrebuješ sezónu)
-  let currentCategoryId = null; // Pre filter príspevkov podľa kategórie
+  let page = "seasons"; 
+  let currentId = null; 
+  let currentSeasonId = null; 
+  let currentCategoryId = null; 
   let isAuthenticated = false;
+  let userRole = null;
 
-  // Aktualizácia stavu z URL
   function updatePageFromUrl() {
     let hash = window.location.hash.slice(1); // odstráni '#'
     if (!hash) {
@@ -41,7 +42,6 @@
     const parts = hash.split("/");
     page = parts[0] || "seasons";
 
-    // Ak je stránka "posts", očakávame dva parametre: seasonId a categoryId.
     if (page === "posts" && parts.length >= 3) {
       currentSeasonId = parts[1];
       currentCategoryId = parts[2];
@@ -53,13 +53,10 @@
   }
 
   function goTo(newPage, id = null) {
-  // Rozlíšime, či `id` je obyčajné číslo/string, alebo objekt s parametrami
   if (typeof id === "object" && id !== null) {
-    // Nastavíme parametre
     currentSeasonId = id.seasonId ?? null;
     currentCategoryId = id.categoryId ?? null;
 
-    // Zostavíme URL: #posts/SEASON_ID/CATEGORY_ID (podľa potreby)
     let url = `#${newPage}`;
     if (currentSeasonId) url += `/${currentSeasonId}`;
     if (currentCategoryId) url += `/${currentCategoryId}`;
@@ -71,7 +68,6 @@
     );
     page = newPage;
   } else {
-    // Pôvodná logika pre "obyčajné" ID
     currentId = id;
     history.pushState({ page: newPage, id }, "", `#${newPage}${id ? `/${id}` : ""}`);
     page = newPage;
@@ -96,21 +92,27 @@
   async function checkAuth() {
     const token = localStorage.getItem("access_token");
     if (!token) {
-      console.log("Nie si prihlásený");
-      isAuthenticated = false;
-      return;
+        console.log("Nie si prihlásený");
+        isAuthenticated = false;
+        userRole = null;
+        return;
     }
+
     const res = await fetch("http://localhost:8000/api/user", {
-      headers: { Authorization: `Bearer ${token}` },
-      credentials: "include"
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include"
     });
+
     if (res.ok) {
-      isAuthenticated = true;
+        const data = await res.json();
+        isAuthenticated = true;
+        userRole = data.role; // Predpokladáme, že server vráti rolu (admin/user)
     } else if (res.status === 401) {
-      console.log("Token expirovaný, skúšam obnoviť...");
-      await refreshAccessToken();
+        console.log("Token expirovaný, skúšam obnoviť...");
+        await refreshAccessToken();
     } else {
-      isAuthenticated = false;
+        isAuthenticated = false;
+        userRole = null;
     }
   }
 
@@ -151,10 +153,10 @@
   });
 </script>
 
-<Navbar {isAuthenticated} {goTo} {logout} />
+<Navbar {isAuthenticated} {userRole} {goTo} {logout} />
 
 {#if page === "seasons"}
-  <Seasons {goTo} {isAuthenticated}/>
+  <Seasons {goTo} {isAuthenticated} {userRole}/>
 {:else if page === "add-season"}
   <AddSeason {goTo} />
 {:else if page === "edit-season"}
@@ -167,23 +169,29 @@
 {:else if page === "restaurant-detail"}
   <DetailRestaurant restaurantId={currentId} />
 {:else if page === "restaurants"}
-  <Restaurants {goTo} {isAuthenticated}/>
+  <Restaurants {goTo} {isAuthenticated} {userRole}/>
 
 {:else if page === "categories"}
-  <Categories {goTo} {isAuthenticated}/>
+  <Categories {goTo} {isAuthenticated} {userRole}/>
 {:else if page === "add-category"}
   <AddCategory {goTo} />
 {:else if page === "edit-category"}
   <EditCategory selectedCategoryId={currentId} {goTo}/>
 
 {:else if page === "posts"}
-  <Posts {goTo} {isAuthenticated} seasonId={currentSeasonId} categoryId={currentCategoryId} />
+  <Posts {goTo} {isAuthenticated} {userRole} seasonId={currentSeasonId} categoryId={currentCategoryId} />
 {:else if page === "add-post"}
   <AddPost {goTo} />
 {:else if page === "edit-post"}
   <EditPost postId={currentId} {goTo}/>
 {:else if page === "post-detail"}
   <DetailPosts postId={currentId} />
+
+{:else if page === "register"}
+  <Register on:registerSuccess={() => {
+    isAuthenticated = true;
+    goTo("seasons");
+  }}/>
 {:else if page === "login"}
   <Login on:loginSuccess={() => {
     isAuthenticated = true;

@@ -24,7 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'api/*',
             'login',
-            'logout', // Vylúči všetky trasy začínajúce s 'api/'
+            'logout', 
+            'register',
         ]);
     })
     
