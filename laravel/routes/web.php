@@ -5,6 +5,7 @@ use App\Http\Controllers\SeasonController;
 use App\Http\Controllers\RestaurantController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/', function () {
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 // });
 
 Route::middleware('guest')->group(function () {
-    //Route::post('api/register', [RegisteredUserController::class, 'store']);
+    Route::post('api/register', [RegisteredUserController::class, 'store']);
     Route::post('api/login', [AuthenticatedSessionController::class, 'store'])->name('login');
 });
 

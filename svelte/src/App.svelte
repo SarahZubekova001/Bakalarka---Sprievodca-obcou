@@ -5,6 +5,7 @@
   import EditSeason from "./routes/EditSeason.svelte";
   import Login from "./routes/Login.svelte";
   import Register from "./routes/Register.svelte";
+  import ManageUsers from "./routes/ManageUsers.svelte";
 
   import Restaurants from "./routes/Restaurants.svelte";
   import AddRestaurant from "./routes/NewRestaurant.svelte";
@@ -29,6 +30,7 @@
   let currentCategoryId = null; 
   let isAuthenticated = false;
   let userRole = null;
+  let userName = null;
 
   function updatePageFromUrl() {
     let hash = window.location.hash.slice(1); // odstráni '#'
@@ -95,6 +97,7 @@
         console.log("Nie si prihlásený");
         isAuthenticated = false;
         userRole = null;
+        userName = null;
         return;
     }
 
@@ -106,13 +109,15 @@
     if (res.ok) {
         const data = await res.json();
         isAuthenticated = true;
-        userRole = data.role; // Predpokladáme, že server vráti rolu (admin/user)
+        userRole = data.role;
+        userName = data.name;
     } else if (res.status === 401) {
         console.log("Token expirovaný, skúšam obnoviť...");
         await refreshAccessToken();
     } else {
         isAuthenticated = false;
         userRole = null;
+        userName = null;
     }
   }
 
@@ -153,7 +158,7 @@
   });
 </script>
 
-<Navbar {isAuthenticated} {userRole} {goTo} {logout} />
+<Navbar {isAuthenticated} {userRole} {userName} {goTo} {logout} />
 
 {#if page === "seasons"}
   <Seasons {goTo} {isAuthenticated} {userRole}/>
@@ -192,6 +197,10 @@
     isAuthenticated = true;
     goTo("seasons");
   }}/>
+
+{:else if page === "manage-accounts"}
+  <ManageUsers />
+
 {:else if page === "login"}
   <Login on:loginSuccess={() => {
     isAuthenticated = true;
@@ -199,10 +208,4 @@
   }}/>
 {/if}
 
-<style>
-  body {
-    margin: 0;
-    padding-top: 60px;
-    font-family: sans-serif;
-  }
-</style>
+

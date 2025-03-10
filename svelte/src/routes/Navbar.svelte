@@ -1,12 +1,14 @@
 <script>
   import { onMount } from "svelte";
   export let isAuthenticated = false;
+  export let userRole = null;
+  export let userName = null;
   export let logout;
   export let goTo;
-  export let userRole;
 
   let seasons = [];
   let categories = [];
+  let showUserMenu = false;
 
   async function fetchSeasons() {
     try {
@@ -27,6 +29,9 @@
       console.error("Chyba pri načítaní kategórií:", err);
     }
   }
+  function toggleUserMenu() {
+    showUserMenu = !showUserMenu;
+  }
 
   onMount(() => {
     fetchSeasons();
@@ -39,7 +44,6 @@
     <a class="logo" on:click={() => goTo("seasons")}>Obec</a>
 
     <ul class="nav-links">
-      <!-- Dynamické sezóny -->
       <li class="dropdown">
         <a class="dropbtn" on:click={() => goTo("seasons")}>Sezóny</a>
         <ul class="dropdown-content">
@@ -48,6 +52,7 @@
               <a on:click={() => goTo(`season/${season.id}`)}>{season.name}</a>
             </li>
           {/each}
+
           {#if isAuthenticated && userRole === "admin"}
             <li>
               <a on:click={() => goTo("add-season")}>Pridať sezónu</a>
@@ -56,7 +61,6 @@
         </ul>
       </li>
 
-      <!-- Dynamické kategórie -->
       <li class="dropdown">
         <a class="dropbtn" on:click={() => goTo("categories")}>Kategórie</a>
         <ul class="dropdown-content">
@@ -65,6 +69,7 @@
               <a on:click={() => goTo(`category/${category.id}`)}>{category.name}</a>
             </li>
           {/each}
+
           {#if isAuthenticated && userRole === "admin"}
             <li>
               <a on:click={() => goTo("add-category")}>Pridať kategóriu</a>
@@ -73,7 +78,6 @@
         </ul>
       </li>
 
-      <!-- Reštaurácie -->
       <li class="dropdown">
         <a class="dropbtn" on:click={() => goTo("restaurants")}>Reštaurácie</a>
         <ul class="dropdown-content">
@@ -85,17 +89,32 @@
         </ul>
       </li>
 
-      <!-- Prihlásiť / Odhlásiť -->
-      {#if isAuthenticated}
-        <li>
-          <button class="auth-button" on:click={logout}>Odhlásiť</button>
-        </li>
-      {:else}
-        <li>
-          <button class="auth-button" on:click={() => goTo("login")}>Prihlásiť</button>
-          <button class="auth-button" on:click={() => goTo("register")}>Registrovat sa</button>
-        </li>
-      {/if}
+      <ul class="nav-links">
+        {#if isAuthenticated}
+          <!-- Používateľské menu -->
+          <li class="dropdown">
+            <div class="dropbtn" on:click={toggleUserMenu}>
+              <span class="user-icon">👤</span>
+              <span class="user-name">{userName}</span> 
+              <span class="user-role">({userRole})</span>
+            </div>
+
+            {#if showUserMenu}
+              <ul class="dropdown-content">
+                {#if userRole === "admin"}
+                  <a on:click={() => goTo("manage-accounts")}>⚙️ Spravovať účty</a>
+                {/if}
+                <a on:click={logout}>🚪 Odhlásiť sa</a>
+              </ul>
+            {/if}
+          </li>
+        {:else}
+          <li>
+            <button class="auth-button" on:click={() => goTo("login")}>Prihlásiť</button>
+            <button class="auth-button" on:click={() => goTo("register")}>Registrovať sa</button>
+          </li>
+        {/if}
+      </ul>
     </ul>
   </div>
 </nav>
