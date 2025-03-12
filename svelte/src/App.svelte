@@ -31,6 +31,7 @@
   let isAuthenticated = false;
   let userRole = null;
   let userName = null;
+  let userEmail = ""; 
 
   function updatePageFromUrl() {
     let hash = window.location.hash.slice(1); // odstráni '#'
@@ -98,6 +99,7 @@
         isAuthenticated = false;
         userRole = null;
         userName = null;
+        userEmail = null; 
         return;
     }
 
@@ -111,6 +113,7 @@
         isAuthenticated = true;
         userRole = data.role;
         userName = data.name;
+        userEmail = data.email; 
     } else if (res.status === 401) {
         console.log("Token expirovaný, skúšam obnoviť...");
         await refreshAccessToken();
@@ -118,6 +121,7 @@
         isAuthenticated = false;
         userRole = null;
         userName = null;
+        userEmail = null; 
     }
   }
 
@@ -190,7 +194,7 @@
 {:else if page === "edit-post"}
   <EditPost postId={currentId} {goTo}/>
 {:else if page === "post-detail"}
-  <DetailPosts postId={currentId} />
+  <DetailPosts postId={currentId} {isAuthenticated} userEmail={userEmail}/>
 
 {:else if page === "register"}
   <Register on:registerSuccess={() => {

@@ -2,26 +2,28 @@
   import { onMount } from "svelte";
 
   export let postId;
-
+  export let isAuthenticated;
+  export let userEmail;
   let post = null;
   let errorMessage = "";
   let isLoading = false;
-
-  // Pre Google mapu
+  let comments = [];
+  let newComment = "";
+  let newEvaluation = 5;
+  let isSubmitting = false;
   let lat = null;
   let lng = null;
   let mapUrl = "";
 
-  // Slider
   let currentIndex = 0;
   let interval;
 
   onMount(async () => {
     await fetchPostDetail();
+    await fetchComments();
     startAutoSlide();
   });
 
-  // Načíta detail príspevku z /api/posts/{postId}
   async function fetchPostDetail() {
     isLoading = true;
     try {
@@ -41,6 +43,50 @@
       isLoading = false;
     }
   }
+  async function fetchComments() {
+    try {
+      const res = await fetch(`http://localhost:8000/api/reviews?postId=${postId}`);
+      if (!res.ok) throw new Error("Nepodarilo sa načítať komentáre.");
+      comments = await res.json();
+    } catch (err) {
+      console.error("Chyba pri načítaní komentárov:", err);
+    }
+  }
+
+  async function submitComment() {
+  if (!isAuthenticated) {
+    alert("Musíte byť prihlásený na pridanie komentára.");
+    return;
+  }
+  if (!newComment.trim()) {
+    alert("Komentár nemôže byť prázdny.");
+    return;
+  }
+
+  isSubmitting = true;
+  try {
+    const res = await fetch("http://localhost:8000/api/reviews", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mail: userEmail,       // <--- sem dáš email
+        id_post: postId,       // <--- recenzia k príspevku
+        text: newComment,
+        evaluation: newEvaluation,
+      }),
+    });
+
+    if (!res.ok) throw new Error("Chyba pri odosielaní komentára.");
+
+    newComment = "";
+    newEvaluation = 5;
+    await fetchComments(); 
+  } catch (err) {
+    console.error("Chyba pri odosielaní:", err);
+  } finally {
+    isSubmitting = false;
+  }
+}
 
 
   function getFullAddress() {
@@ -75,7 +121,7 @@
     }
   }
 
-  // Slider funkcie
+  
   function prevSlide() {
     if (post && post.gallery && post.gallery.images.length > 0) {
       currentIndex = (currentIndex - 1 + post.gallery.images.length) % post.gallery.images.length;
@@ -94,6 +140,9 @@
         nextSlide();
       }, 4000);
     }
+  }
+  function setRating(value) {
+    newEvaluation = value;
   }
 </script>
 
@@ -123,15 +172,15 @@
       <img class="main-image" src="placeholder-image.jpg" alt="Obrázok nie je dostupný" />
     {/if}
 
-    <!-- Základné info o príspevku -->
+    
     <h1>{post.name}</h1>
 
-    <!-- Otváracie hodiny, ak existujú -->
+    
     {#if post.opening_hours}
       <p><strong>Otváracie hodiny:</strong> {post.opening_hours}</p>
     {/if}
 
-    <!-- Web / URL adresa, ak existuje -->
+    
     {#if post.url_address}
       <p>
         <strong>Web:</strong>
@@ -141,17 +190,17 @@
       </p>
     {/if}
 
-    <!-- Popis, ak existuje -->
+    
     {#if post.description}
       <p>{post.description}</p>
     {/if}
 
-    <!-- Adresa -->
+    
     {#if post.address}
       <p><strong>Adresa:</strong> {getFullAddress()}</p>
     {/if}
 
-    <!-- Mapa -->
+    
     <h2>Mapa</h2>
     {#if lat && lng}
       <iframe
@@ -165,6 +214,47 @@
     {:else}
       <p>Načítavam mapu...</p>
     {/if}
+
+    
+    <h2>Komentáre</h2>
+    {#if comments.length > 0}
+      <ul class="comment-list">
+        {#each comments as comment}
+          <li class="comment">
+            <strong>{comment.mail}</strong> – 
+            <span class="stars">
+              {#each Array(5) as _, i}
+                <span class="star {i < comment.evaluation ? 'filled' : ''}">★</span>
+              {/each}
+            </span>
+            <p>{comment.text}</p>
+          </li>
+        {/each}
+      </ul>
+    {:else}
+      <p>Zatiaľ žiadne komentáre.</p>
+    {/if}
+
+    
+    {#if isAuthenticated}
+      <div class="comment-form">
+        <label>Pridať komentár:</label>
+        <textarea bind:value={newComment} placeholder="Napíš svoj komentár..."></textarea>
+
+        <label>Hodnotenie:</label>
+        <div class="rating">
+          {#each Array(5) as _, i}
+            <span class="star {i < newEvaluation ? 'filled' : ''}" on:click={() => setRating(i + 1)}>★</span>
+          {/each}
+        </div>
+
+        <button on:click={submitComment} disabled={isSubmitting}>
+          {isSubmitting ? "Odosielanie..." : "Odoslať"}
+        </button>
+      </div>
+    {:else}
+      <p>Prihláste sa na pridanie komentára.</p>
+    {/if}
   </div>
 {/if}
 
@@ -174,6 +264,71 @@
     margin: 2rem auto;
     padding: 0 1rem;
     font-family: sans-serif;
+  }
+  .comment-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .stars {
+    font-size: 1.2rem;
+  }
+  .rating {
+    display: flex;
+    gap: 5px;
+    margin: 10px 0;
+  }
+
+  .star {
+    font-size: 2rem;
+    cursor: pointer;
+    color: gray; /* Predvolene sivé hviezdičky */
+    transition: color 0.3s;
+  }
+
+  .star.filled {
+    color: gold; /* Po kliknutí sa zmenia na zlatú */
+  }
+
+  .star:hover {
+    color: orange; /* Pri hoveri sa zmenia na oranžovú */
+  }
+  .comment {
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+
+  .comment-form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 20px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+  }
+  input {
+    width: 60px;
+    margin: 10px 0;
+  }
+
+  button {
+    padding: 10px;
+    border: none;
+    background: #28a745;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+
+  button:disabled {
+    background: gray;
   }
 
   .slider-container {

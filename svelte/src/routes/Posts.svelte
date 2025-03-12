@@ -41,7 +41,69 @@
   onMount(fetchPosts);
 </script>
 
+<div class="top-bar">
+  {#if isAuthenticated && userRole === 'admin'}
+    <button class="add-post-btn" on:click={() => goTo("add-post")}>➕ Pridať príspevok</button>
+  {/if}
+</div>
+
+<div class="container">
+  {#if isLoading}
+    <p class="message">Načítavam príspevky...</p>
+  {:else if errorMessage}
+    <p class="message" style="color: red;">{errorMessage}</p>
+  {:else if posts.length === 0}
+    <p class="message">Žiadne príspevky neboli nájdené.</p>
+  {:else}
+    {#each posts as post}
+      <div class="category-card" on:click={() => goTo("post-detail", post.id)}>
+        {#if post.gallery && post.gallery.images && post.gallery.images.length > 0}
+          <img class="category-image"
+            src={`http://localhost:8000/storage/${post.gallery.images[0].path}`}
+            alt={post.name} />
+        {:else}
+          <img class="category-image" src="placeholder-image.jpg" alt="Obrázok nie je dostupný" />
+        {/if}
+        <h2>{post.name}</h2>
+        {#if isAuthenticated && userRole === 'admin'} 
+          <div class="buttons">
+            <button on:click={() => goTo("edit-post", post.id)} on:click|stopPropagation>📝 Upraviť</button>
+            <button on:click={() => deletePost(post.id)}>🗑️ Vymazať</button>
+          </div>
+        {/if}
+      </div>
+    {/each}
+  {/if}
+</div>
+
 <style>
+  .top-bar {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start; /* Zarovnané doľava */
+    padding: 15px 25px;
+    margin-top: 80px; /* Pridávame odsadenie kvôli navbaru */
+  }
+
+  .add-post-btn {
+    padding: 10px 18px;
+    font-size: 15px;
+    font-weight: bold;
+    color: white;
+    background-color:rgba(146, 158, 161, 0.67);
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .add-post-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  }
+
   .container {
     display: flex;
     flex-wrap: wrap;
@@ -49,10 +111,9 @@
     gap: 25px;
     padding: 25px;
     font-family: sans-serif;
-    background: none; /* Bez pozadia */
+    background: none;
   }
 
-  
   .category-card {
     flex: 1 1 300px;
     max-width: 350px;
@@ -98,7 +159,6 @@
     gap: 10px;
   }
 
-  
   button {
     position: relative;
     display: inline-flex;
@@ -114,13 +174,13 @@
     color: #fff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     background-color: rgb(200, 195, 195);
-    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s, box-shadow 0.3s;
   }
 
   button:hover {
     transform: scale(1.05);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
   }
 
   button::after {
@@ -144,39 +204,3 @@
     margin-top: 50px;
   }
 </style>
-
-<div class="container">
-  {#if isLoading}
-    <p class="message">Načítavam príspevky...</p>
-  {:else if errorMessage}
-    <p class="message" style="color: red;">{errorMessage}</p>
-  {:else if posts.length === 0}
-    <p class="message">Žiadne príspevky neboli nájdené.</p>
-  {:else}
-    {#each posts as post}
-      <!-- Každý príspevok vyzerá rovnako ako "kategória" -->
-      <div class="category-card" on:click={() => goTo("post-detail", post.id)}>
-        {#if post.gallery && post.gallery.images && post.gallery.images.length > 0}
-        <img
-          class="category-image"
-          src={`http://localhost:8000/storage/${post.gallery.images[0].path}`}
-          alt={post.name}
-        />
-      {:else}
-        <img
-          class="category-image"
-          src="placeholder-image.jpg"
-          alt="Obrázok nie je dostupný"
-        />
-      {/if}
-        <h2>{post.name}</h2>
-        {#if isAuthenticated&& userRole === 'admin'} 
-          <div class="buttons">
-            <button on:click={() => goTo("edit-post", post.id)} on:click|stopPropagation>📝 Upraviť</button>
-            <button on:click={() => deletePost(post.id)}>🗑️ Vymazať</button>
-          </div>
-        {/if}
-      </div>
-    {/each}
-  {/if}
-</div>

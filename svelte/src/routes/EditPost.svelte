@@ -1,10 +1,9 @@
 <script>
   import { onMount } from "svelte";
 
-  export let postId;  
+  export let postId;
   export let goTo;
 
- 
   let name = "";
   let description = "";
   let postal_code = "";
@@ -15,13 +14,35 @@
   let id_season = "";
   let id_category = "";
   let url_address = "";
-  let imageFiles = [];       
-  let existingImages = [];   
+  let imageFiles = [];
+  let existingImages = [];
 
   let isLoading = true;
   let errorMessage = "";
 
- 
+  let seasons = [];
+  let categories = [];
+
+  async function fetchSeasons() {
+    try {
+      const res = await fetch("http://localhost:8000/api/seasons");
+      if (!res.ok) throw new Error("Nepodarilo sa načítať sezóny");
+      seasons = await res.json();
+    } catch (err) {
+      console.error("Chyba pri načítaní sezón:", err);
+    }
+  }
+
+  async function fetchCategories() {
+    try {
+      const res = await fetch("http://localhost:8000/api/categories");
+      if (!res.ok) throw new Error("Nepodarilo sa načítať kategórie");
+      categories = await res.json();
+    } catch (err) {
+      console.error("Chyba pri načítaní kategórií:", err);
+    }
+  }
+
   async function fetchPost() {
     try {
       const res = await fetch(`http://localhost:8000/api/posts/${postId}`);
@@ -33,7 +54,7 @@
       name = post.name || "";
       description = post.description || "";
       postal_code = post.address?.postal_code || "";
-      town = post.address && post.address.town ? post.address.town.name || "" : "";
+      town = post.address?.town?.name || "";
       street = post.address?.street || "";
       descriptive_number = post.address?.descriptive_number || "";
       opening_hours = post.opening_hours || "";
@@ -98,25 +119,23 @@
     }
   }
 
-  onMount(fetchPost);
+  onMount(() => {
+    fetchSeasons();
+    fetchCategories();
+    fetchPost();
+  });
 </script>
 
 <style>
   .form-container {
-    max-width: 600px;
+    max-width: 800px;
     margin: 40px auto;
     background: #fff;
-    padding: 25px;
+    padding: 30px;
     border-radius: 12px;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
     font-family: sans-serif;
     text-align: center;
-  }
-
-  .form-container h1 {
-    margin-bottom: 20px;
-    font-size: 1.8rem;
-    color: #333;
   }
 
   .form-group {
@@ -131,16 +150,54 @@
     color: #555;
   }
 
-  .form-group input[type="text"],
+  .form-group input,
   .form-group textarea,
-  .form-group input[type="file"] {
+  .form-group select {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     border: 1px solid #ccc;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 1rem;
+    background: white;
   }
 
+
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 6px rgba(0, 123, 255, 0.3);
+  }
+
+  .button-group {
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  .custom-button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #fff;
+    background-color: #2196f3;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  .custom-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+  }
+  .existing-images img {
+    width: 120px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+  }
   .existing-images {
     margin: 10px 0;
     text-align: center;
@@ -150,72 +207,6 @@
     justify-content: center;
   }
 
-  .existing-images img {
-    width: 120px;
-    height: 90px;
-    object-fit: cover;
-    border-radius: 6px;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-  }
-
-  .button-group {
-    margin-top: 20px;
-    text-align: center;
-  }
-
-  .custom-button {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 30px;
-    font-size: 1rem;
-    font-weight: bold;
-    color: #fff;
-    background-color: rgb(200, 195, 195);
-    cursor: pointer;
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-    transition: transform 0.3s, box-shadow 0.3s;
-  }
-
-  .custom-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.25);
-  }
-
-  .custom-button::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 50%;
-    border-top-left-radius: 30px;
-    border-top-right-radius: 30px;
-    background: linear-gradient(
-      to bottom,
-      rgba(255,255,255,0.4),
-      rgba(255,255,255,0.05)
-    );
-    pointer-events: none;
-  }
-
-  .save-btn {
-    background-color: #2196f3;
-  }
-
-  .back-btn {
-    background-color: #777;
-  }
-
-  .error-message {
-    color: red;
-    margin-top: 10px;
-  }
 </style>
 
 <div class="form-container">
@@ -236,12 +227,7 @@
 
       <div class="form-group">
         <label for="description">Popis:</label>
-        <textarea
-          id="description"
-          rows="3"
-          bind:value={description}
-          placeholder="Krátky popis..."
-        ></textarea>
+        <textarea id="description" rows="3" bind:value={description}></textarea>
       </div>
 
       <div class="form-group">
@@ -261,33 +247,25 @@
 
       <div class="form-group">
         <label for="descriptive_number">Číslo domu:</label>
-        <input
-          id="descriptive_number"
-          type="text"
-          bind:value={descriptive_number}
-          required
-        />
+        <input id="descriptive_number" type="text" bind:value={descriptive_number} required />
       </div>
 
       <div class="form-group">
-        <label for="opening_hours">Otváracie hodiny (ak relevantné):</label>
-        <input id="opening_hours" type="text" bind:value={opening_hours} />
+        <label for="id_season">Sezóna:</label>
+        <select id="id_season" bind:value={id_season} required>
+          {#each seasons as season}
+            <option value={season.id}>{season.name}</option>
+          {/each}
+        </select>
       </div>
 
       <div class="form-group">
-        <label for="id_season">Sezóna (ID):</label>
-        <input id="id_season" type="text" bind:value={id_season} />
-      </div>
-
-      <div class="form-group">
-        <label for="id_category">Kategória (ID):</label>
-        <input
-          id="id_category"
-          type="text"
-          bind:value={id_category}
-          placeholder="Napr. 3, 4, ..."
-          required
-        />
+        <label for="id_category">Kategória:</label>
+        <select id="id_category" bind:value={id_category} required>
+          {#each categories as category}
+            <option value={category.id}>{category.name}</option>
+          {/each}
+        </select>
       </div>
 
       <div class="form-group">
@@ -295,7 +273,6 @@
         <input id="url_address" type="text" bind:value={url_address} />
       </div>
 
-      <!-- Existujúce obrázky (ak nejaké sú) -->
       {#if existingImages.length > 0}
         <div class="existing-images">
           {#each existingImages as imgPath}
@@ -306,24 +283,12 @@
 
       <div class="form-group">
         <label for="newImages">Nové obrázky:</label>
-        <input
-          id="newImages"
-          type="file"
-          multiple
-          accept="image/*"
-          on:change={handleFileChange}
-        />
+        <input id="newImages" type="file" multiple accept="image/*" on:change={handleFileChange} />
       </div>
 
       <div class="button-group">
-        <button type="submit" class="custom-button save-btn">Uložiť</button>
-        <button
-          type="button"
-          class="custom-button back-btn"
-          on:click={() => goTo("posts")}
-        >
-          Späť
-        </button>
+        <button type="submit" class="custom-button">Uložiť</button>
+        <button type="button" class="custom-button back-btn" on:click={() => goTo("posts")}>Späť</button>
       </div>
     </form>
   {/if}

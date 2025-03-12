@@ -117,3 +117,22 @@ export async function updateRestaurant(id, formData) {
 export async function deleteRestaurant(id) {
     await fetch(`http://localhost:8000/api/restaurants/${id}`, { method: "DELETE" }); 
 }
+
+export async function fetchReviews() {
+    const response = await fetch("http://localhost:8000/api/reviews"); 
+    return response.json();
+}
+export async function fetchReview(id) {
+    const response = await fetch(`http://localhost:8000/api/reviews/${id}`);
+    if (!response.ok) {
+        throw new Error(`Nepodarilo sa načítať recenziu (HTTP ${response.status})`);
+    }
+    return response.json();
+}
+export async function createReview(formData) {
+    const response = await fetch("http://localhost:8000/api/reviews", { 
+        method: "POST",
+        body: formData,
+    });
+    return response.json();
+}
