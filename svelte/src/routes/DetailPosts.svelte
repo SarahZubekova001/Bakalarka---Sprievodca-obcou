@@ -8,12 +8,12 @@
   let errorMessage = "";
   let isLoading = false;
 
-  let comments = [];
-  let editingCommentId = null;
+  let reviews = [];         
+  let editingReviewId = null;
   let editingText = "";
   let editingEvaluation = 5;
-  let newComment = "";
-  let newEvaluation = 5;
+  let newComment = "";     
+  let newEvaluation = 5;    
   let isSubmitting = false;
   let lat = null;
   let lng = null;
@@ -24,7 +24,7 @@
 
   onMount(async () => {
     await fetchPostDetail();
-    await fetchComments();
+    await fetchReviews();
     startAutoSlide();
   });
 
@@ -47,50 +47,49 @@
       isLoading = false;
     }
   }
-  async function fetchComments() {
+  async function fetchReviews() {
     try {
       const res = await fetch(`http://localhost:8000/api/reviews?postId=${postId}`);
-      if (!res.ok) throw new Error("Nepodarilo sa načítať komentáre.");
-      comments = await res.json();
-      console.log("Načítané komentáre:", comments);
+      if (!res.ok) {
+        throw new Error("Nepodarilo sa načítať komentáre.");
+      }
+      reviews = await res.json();
     } catch (err) {
       console.error("Chyba pri načítaní komentárov:", err);
     }
   }
 
-  async function deleteComment(id) {
-    const sure = confirm("Naozaj chcete vymazať komentár?");
-    if (!sure) return;
+   async function deleteReview(id) {
+    if (!confirm("Naozaj chcete vymazať recenziu?")) return;
     try {
       const res = await fetch(`http://localhost:8000/api/reviews/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mail: userEmail })
+        body: JSON.stringify({ mail: userEmail }),
       });
-      if (!res.ok) throw new Error("Chyba pri mazaní komentára.");
-      await fetchComments();
+
+      if (!res.ok) throw new Error("Chyba pri mazaní recenzie.");
+      await fetchReviews();
     } catch (err) {
       console.error(err);
     }
   }
 
-
-
-  function editComment(comment) {
-    console.log("Upravujem komentár s ID:", comment.id);
-    editingCommentId = comment.id;
-    editingText = comment.text;
-    editingEvaluation = comment.evaluation;
+  function editReview(review) {
+    console.log("Upravujem recenziu s ID:", review.id);
+    editingReviewId = review.id;
+    editingText = review.text;
+    editingEvaluation = review.evaluation;
   }
 
-  async function submitEditComment() {
+  async function submitEditReview() {
     if (!editingText.trim()) {
-      alert("Komentár nemôže byť prázdny.");
+      alert("Recenzia nemôže byť prázdna.");
       return;
     }
     try {
-      console.log("Odosielam úpravu pre ID:", editingCommentId);
-      const res = await fetch(`http://localhost:8000/api/reviews/${editingCommentId}`, {
+      console.log("Odosielam úpravu pre ID:", editingReviewId);
+      const res = await fetch(`http://localhost:8000/api/reviews/${editingReviewId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -100,55 +99,57 @@
         }),
       });
 
-      if (!res.ok) throw new Error("Chyba pri úprave komentára.");
-      editingCommentId = null;
+      if (!res.ok) throw new Error("Chyba pri úprave recenzie.");
+      editingReviewId = null;
       editingText = "";
       editingEvaluation = 5;
-      await fetchComments();
+      await fetchReviews();
     } catch (err) {
       console.error("Chyba pri odoslaní editácie:", err);
     }
   }
 
+  
+
   function setEditRating(value) {
     editingEvaluation = value;
   }
 
-  async function submitComment() {
-  if (!isAuthenticated) {
-    alert("Musíte byť prihlásený na pridanie komentára.");
-    return;
+  async function submitReview() {
+    if (!isAuthenticated) {
+      alert("Musíte byť prihlásený na pridanie recenzie.");
+      return;
+    }
+    if (!newComment.trim()) {
+      alert("Recenzia nemôže byť prázdna.");
+      return;
+    }
+
+    isSubmitting = true;
+    try {
+      const res = await fetch("http://localhost:8000/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mail: userEmail,        
+          id_restaurant: restaurantId, 
+          text: newComment,
+          evaluation: newEvaluation
+        }),
+      });
+
+      if (!res.ok) throw new Error("Chyba pri odosielaní recenzie.");
+
+      newComment = "";
+      newEvaluation = 5;
+
+      await fetchReviews();
+    } catch (err) {
+      console.error("Chyba pri odosielaní:", err);
+    } finally {
+      isSubmitting = false;
+    }
   }
-  if (!newComment.trim()) {
-    alert("Komentár nemôže byť prázdny.");
-    return;
-  }
-
-  isSubmitting = true;
-  try {
-    const res = await fetch("http://localhost:8000/api/reviews", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mail: userEmail,       
-        id_post: postId,       
-        text: newComment,
-        evaluation: newEvaluation,
-      }),
-    });
-
-    if (!res.ok) throw new Error("Chyba pri odosielaní komentára.");
-
-    newComment = "";
-    newEvaluation = 5;
-    await fetchComments(); 
-  } catch (err) {
-    console.error("Chyba pri odosielaní:", err);
-  } finally {
-    isSubmitting = false;
-  }
-}
-
 
   function getFullAddress() {
     if (!post || !post.address) return "";
@@ -277,66 +278,62 @@
     {/if}
 
     
-    <h2>Komentáre</h2>
-    {#if comments.length > 0}
-  <ul class="comment-list">
-    {#each comments as comment}
-      <li class="comment">
-        <strong>{comment.mail}</strong> – 
-        <span class="stars">
-          {#each Array(5) as _, i}
-            <span class="star {i < comment.evaluation ? 'filled' : ''}">★</span>
-          {/each}
-        </span>
-        <p>{comment.text}</p>
-
-        {#if isAuthenticated && (userEmail === comment.mail)}
-          <button on:click={() => editComment(comment)}>Upraviť</button>
-          <button on:click={() => deleteComment(comment.id)}>Vymazať</button>
-        {/if}
-
-        {#if editingCommentId === comment.id}
-          <div class="edit-form">
-            <h3>Upraviť komentár</h3>
-            <textarea bind:value={editingText}></textarea>
-            <div class="rating">
+    <h2>Recenzie</h2>
+    {#if reviews.length > 0}
+      <ul class="review-list">
+        {#each reviews as review}
+          <li class="review">
+            <strong>{review.mail}</strong> – 
+            <span class="stars">
               {#each Array(5) as _, i}
-                <span class="star {i < editingEvaluation ? 'filled' : ''}" on:click={() => setEditRating(i + 1)}>★</span>
+                <span class="star {i < review.evaluation ? 'filled' : ''}">★</span>
               {/each}
-            </div>
-            <button on:click={submitEditComment}>Uložiť zmeny</button>
-            <button on:click={() => editingCommentId = null}>Zrušiť</button>
-          </div>
-        {/if}
-      </li>
-    {/each}
-  </ul>
-{:else}
-  <p>Zatiaľ žiadne komentáre.</p>
-{/if}
-
+            </span>
+            <p>{review.text}</p>
+            {#if isAuthenticated && (userEmail === review.mail)}
+              <button on:click={() => editReview(review)}>Upraviť</button>
+              <button on:click={() => deleteReview(review.id)}>Vymazať</button>
+            {/if}
+            {#if editingReviewId === review.id}
+              <div class="edit-form">
+                <h3>Upraviť recenziu</h3>
+                <textarea bind:value={editingText}></textarea>
+                <div class="rating">
+                  {#each Array(5) as _, i}
+                    <span class="star {i < editingEvaluation ? 'filled' : ''}" on:click={() => setEditRating(i + 1)}>★</span>
+                  {/each}
+                </div>
+                <button on:click={submitEditReview}>Uložiť zmeny</button>
+                <button on:click={() => editingReviewId = null}>Zrušiť</button>
+              </div>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    {:else}
+        <p>Zatiaľ žiadne recenzie.</p>
+    {/if}
 
     
-    {#if isAuthenticated}
-      <div class="comment-form">
-        <label>Pridať komentár:</label>
-        <textarea bind:value={newComment} placeholder="Napíš svoj komentár..."></textarea>
 
+    {#if isAuthenticated}
+      <div class="review-form">
+        <label>Pridať recenziu:</label>
+        <textarea bind:value={newComment} placeholder="Napíš svoju recenziu..."></textarea>
         <label>Hodnotenie:</label>
         <div class="rating">
           {#each Array(5) as _, i}
             <span class="star {i < newEvaluation ? 'filled' : ''}" on:click={() => setRating(i + 1)}>★</span>
           {/each}
         </div>
-
-        <button on:click={submitComment} disabled={isSubmitting}>
+        <button on:click={submitReview} disabled={isSubmitting}>
           {isSubmitting ? "Odosielanie..." : "Odoslať"}
         </button>
       </div>
     {:else}
-      <p>Prihláste sa na pridanie komentára.</p>
+      <p>Prihláste sa na pridanie recenzie.</p>
     {/if}
-  </div>
+    </div>
 {/if}
 
 <style>
@@ -346,7 +343,7 @@
     padding: 0 1rem;
     font-family: sans-serif;
   }
-  .comment-list {
+  .review-list {
     list-style: none;
     padding: 0;
   }
@@ -374,14 +371,14 @@
   .star:hover {
     color: orange; 
   }
-  .comment {
+  .review {
     background: #f9f9f9;
     padding: 10px;
     border-radius: 8px;
     margin-bottom: 10px;
   }
 
-  .comment-form {
+  .review-form {
     display: flex;
     flex-direction: column;
     margin-top: 20px;
