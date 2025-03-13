@@ -29,6 +29,11 @@ class Post extends Model
     {
         return $this->hasOne(Gallery::class, 'id_post');
     }
+    public function reviews()
+    {
+        return $this->hasMany(Review::class, 'id_post');
+    }
+
     
     
 }

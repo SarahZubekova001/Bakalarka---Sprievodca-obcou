@@ -15,7 +15,7 @@ class RestaurantController extends Controller
     
     public function index()
     {
-        $restaurants = Restaurant::with('address', 'gallery.images')->get();
+        $restaurants = Restaurant::with('address', 'gallery.images', 'reviews' )->get();
         return response()->json($restaurants);
     }
 

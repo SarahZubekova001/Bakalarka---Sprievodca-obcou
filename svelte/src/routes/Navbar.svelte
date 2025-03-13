@@ -41,7 +41,6 @@
 
 <nav class="navbar">
   <div class="nav-container">
-    <a class="logo" on:click={() => goTo("seasons")}>Obec</a>
 
     <ul class="nav-links">
       <li class="dropdown">

@@ -176,7 +176,7 @@
 {:else if page === "edit-restaurant"}
   <EditRestaurant restaurantId={currentId} {goTo}/>
 {:else if page === "restaurant-detail"}
-  <DetailRestaurant restaurantId={currentId} />
+  <DetailRestaurant restaurantId={currentId} {isAuthenticated} userEmail={userEmail}/>
 {:else if page === "restaurants"}
   <Restaurants {goTo} {isAuthenticated} {userRole}/>
 

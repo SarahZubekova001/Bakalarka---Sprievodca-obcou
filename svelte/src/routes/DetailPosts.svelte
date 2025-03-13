@@ -7,7 +7,11 @@
   let post = null;
   let errorMessage = "";
   let isLoading = false;
+
   let comments = [];
+  let editingCommentId = null;
+  let editingText = "";
+  let editingEvaluation = 5;
   let newComment = "";
   let newEvaluation = 5;
   let isSubmitting = false;
@@ -48,9 +52,66 @@
       const res = await fetch(`http://localhost:8000/api/reviews?postId=${postId}`);
       if (!res.ok) throw new Error("Nepodarilo sa načítať komentáre.");
       comments = await res.json();
+      console.log("Načítané komentáre:", comments);
     } catch (err) {
       console.error("Chyba pri načítaní komentárov:", err);
     }
+  }
+
+  async function deleteComment(id) {
+    const sure = confirm("Naozaj chcete vymazať komentár?");
+    if (!sure) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/reviews/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mail: userEmail })
+      });
+      if (!res.ok) throw new Error("Chyba pri mazaní komentára.");
+      await fetchComments();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+
+
+  function editComment(comment) {
+    console.log("Upravujem komentár s ID:", comment.id);
+    editingCommentId = comment.id;
+    editingText = comment.text;
+    editingEvaluation = comment.evaluation;
+  }
+
+  async function submitEditComment() {
+    if (!editingText.trim()) {
+      alert("Komentár nemôže byť prázdny.");
+      return;
+    }
+    try {
+      console.log("Odosielam úpravu pre ID:", editingCommentId);
+      const res = await fetch(`http://localhost:8000/api/reviews/${editingCommentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mail: userEmail,
+          text: editingText,
+          evaluation: editingEvaluation
+        }),
+      });
+
+      if (!res.ok) throw new Error("Chyba pri úprave komentára.");
+      editingCommentId = null;
+      editingText = "";
+      editingEvaluation = 5;
+      await fetchComments();
+    } catch (err) {
+      console.error("Chyba pri odoslaní editácie:", err);
+    }
+  }
+
+  function setEditRating(value) {
+    editingEvaluation = value;
   }
 
   async function submitComment() {
@@ -69,8 +130,8 @@
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        mail: userEmail,       // <--- sem dáš email
-        id_post: postId,       // <--- recenzia k príspevku
+        mail: userEmail,       
+        id_post: postId,       
         text: newComment,
         evaluation: newEvaluation,
       }),
@@ -218,22 +279,42 @@
     
     <h2>Komentáre</h2>
     {#if comments.length > 0}
-      <ul class="comment-list">
-        {#each comments as comment}
-          <li class="comment">
-            <strong>{comment.mail}</strong> – 
-            <span class="stars">
+  <ul class="comment-list">
+    {#each comments as comment}
+      <li class="comment">
+        <strong>{comment.mail}</strong> – 
+        <span class="stars">
+          {#each Array(5) as _, i}
+            <span class="star {i < comment.evaluation ? 'filled' : ''}">★</span>
+          {/each}
+        </span>
+        <p>{comment.text}</p>
+
+        {#if isAuthenticated && (userEmail === comment.mail)}
+          <button on:click={() => editComment(comment)}>Upraviť</button>
+          <button on:click={() => deleteComment(comment.id)}>Vymazať</button>
+        {/if}
+
+        {#if editingCommentId === comment.id}
+          <div class="edit-form">
+            <h3>Upraviť komentár</h3>
+            <textarea bind:value={editingText}></textarea>
+            <div class="rating">
               {#each Array(5) as _, i}
-                <span class="star {i < comment.evaluation ? 'filled' : ''}">★</span>
+                <span class="star {i < editingEvaluation ? 'filled' : ''}" on:click={() => setEditRating(i + 1)}>★</span>
               {/each}
-            </span>
-            <p>{comment.text}</p>
-          </li>
-        {/each}
-      </ul>
-    {:else}
-      <p>Zatiaľ žiadne komentáre.</p>
-    {/if}
+            </div>
+            <button on:click={submitEditComment}>Uložiť zmeny</button>
+            <button on:click={() => editingCommentId = null}>Zrušiť</button>
+          </div>
+        {/if}
+      </li>
+    {/each}
+  </ul>
+{:else}
+  <p>Zatiaľ žiadne komentáre.</p>
+{/if}
+
 
     
     {#if isAuthenticated}
@@ -282,16 +363,16 @@
   .star {
     font-size: 2rem;
     cursor: pointer;
-    color: gray; /* Predvolene sivé hviezdičky */
+    color: gray; 
     transition: color 0.3s;
   }
 
   .star.filled {
-    color: gold; /* Po kliknutí sa zmenia na zlatú */
+    color: gold; 
   }
 
   .star:hover {
-    color: orange; /* Pri hoveri sa zmenia na oranžovú */
+    color: orange; 
   }
   .comment {
     background: #f9f9f9;

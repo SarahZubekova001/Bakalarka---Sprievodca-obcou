@@ -6,6 +6,14 @@
   
   let restaurants = [];
 
+
+  function averageRating(restaurants) {
+    if (!restaurants.reviews || restaurants.reviews.length === 0) return 0;
+    let total = 0;
+    restaurants.reviews.forEach(r => total += r.evaluation);
+    return total / restaurants.reviews.length;
+  }
+
   async function fetchRestaurants() {
     try {
       const res = await fetch("http://localhost:8000/api/restaurants");
@@ -66,6 +74,19 @@
   .restaurant-image:hover {
     opacity: 1;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  }
+  .rating-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .star {
+    font-size: 1.2rem;
+    color: gray;
+  }
+  .star.filled {
+    color: gold;
   }
 
   h2 {
@@ -149,6 +170,18 @@
       {/if}
 
       <h2>{restaurant.name}</h2>
+      {#if restaurant.reviews && restaurant.reviews.length > 0}
+          <div class="rating-display">
+            {#each Array(5) as _, i}
+              <span class="star {i < Math.round(averageRating(restaurant)) ? 'filled' : ''}">★</span>
+            {/each}
+            <span class="avg-rating">({averageRating(restaurant).toFixed(1)})</span>
+          </div>
+        {:else}
+          <div class="rating-display">
+            <span>Žiadne hodnotenie</span>
+          </div>
+        {/if}
       {#if isAuthenticated&& userRole === 'admin'} 
         <div class="buttons">
           <button class="edit" on:click={() => goTo("edit-restaurant", restaurant.id)} on:click|stopPropagation>

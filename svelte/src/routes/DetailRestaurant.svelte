@@ -1,10 +1,22 @@
 <script>
   import { onMount } from "svelte";
+
   export let restaurantId;
+  export let isAuthenticated = false;
+  export let userEmail = "";
 
   let restaurant = null;
   let errorMessage = "";
   let isLoading = false;
+
+   let reviews = [];         
+  let editingReviewId = null;
+  let editingText = "";
+  let editingEvaluation = 5;
+  let newComment = "";     
+  let newEvaluation = 5;    
+  let isSubmitting = false;
+
   let lat = null;
   let lng = null;
   let mapUrl = "";
@@ -14,6 +26,7 @@
 
   onMount(async () => {
     await fetchRestaurantDetail();
+    await fetchReviews();      
     startAutoSlide();
   });
 
@@ -34,17 +47,122 @@
     }
   }
 
+  async function fetchReviews() {
+    try {
+      const res = await fetch(`http://localhost:8000/api/reviews?restaurantId=${restaurantId}`);
+      if (!res.ok) {
+        throw new Error("Nepodarilo sa načítať komentáre.");
+      }
+      reviews = await res.json();
+    } catch (err) {
+      console.error("Chyba pri načítaní komentárov:", err);
+    }
+  }
+
+   async function deleteReview(id) {
+    if (!confirm("Naozaj chcete vymazať recenziu?")) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/reviews/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mail: userEmail }),
+      });
+
+      if (!res.ok) throw new Error("Chyba pri mazaní recenzie.");
+      await fetchReviews();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function editReview(review) {
+    console.log("Upravujem recenziu s ID:", review.id);
+    editingReviewId = review.id;
+    editingText = review.text;
+    editingEvaluation = review.evaluation;
+  }
+
+  async function submitEditReview() {
+    if (!editingText.trim()) {
+      alert("Recenzia nemôže byť prázdna.");
+      return;
+    }
+    try {
+      console.log("Odosielam úpravu pre ID:", editingReviewId);
+      const res = await fetch(`http://localhost:8000/api/reviews/${editingReviewId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mail: userEmail,
+          text: editingText,
+          evaluation: editingEvaluation
+        }),
+      });
+
+      if (!res.ok) throw new Error("Chyba pri úprave recenzie.");
+      editingReviewId = null;
+      editingText = "";
+      editingEvaluation = 5;
+      await fetchReviews();
+    } catch (err) {
+      console.error("Chyba pri odoslaní editácie:", err);
+    }
+  }
+
+  
+
+  function setEditRating(value) {
+    editingEvaluation = value;
+  }
+
+  async function submitReview() {
+    if (!isAuthenticated) {
+      alert("Musíte byť prihlásený na pridanie recenzie.");
+      return;
+    }
+    if (!newComment.trim()) {
+      alert("Recenzia nemôže byť prázdna.");
+      return;
+    }
+
+    isSubmitting = true;
+    try {
+      const res = await fetch("http://localhost:8000/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mail: userEmail,        
+          id_restaurant: restaurantId, 
+          text: newComment,
+          evaluation: newEvaluation
+        }),
+      });
+
+      if (!res.ok) throw new Error("Chyba pri odosielaní recenzie.");
+
+      newComment = "";
+      newEvaluation = 5;
+
+      await fetchReviews();
+    } catch (err) {
+      console.error("Chyba pri odosielaní:", err);
+    } finally {
+      isSubmitting = false;
+    }
+  }
+
   function getFullAddress() {
     if (!restaurant || !restaurant.address) return "";
     const addr = restaurant.address;
     let cityName = addr.town ? addr.town.name : "";
-    
     return `${addr.street} ${addr.descriptive_number}, ${addr.postal_code} ${cityName}, Slovakia`;
   }
 
   async function fetchCoordinates() {
     const address = getFullAddress();
-    const apiKey = "AIzaSyB9QQLMhRMvk5sEoEuX6kSs-UvobBRo6zE"; 
+    if (!address) return;
+
+    const apiKey = "AIzaSyB9QQLMhRMvk5sEoEuX6kSs-UvobBRo6zE";
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
 
     try {
@@ -72,11 +190,15 @@
   }
 
   function startAutoSlide() {
-    if (restaurant && restaurant.gallery && restaurant.gallery.images.length > 1) {
+    if (restaurant?.gallery?.images?.length > 1) {
       interval = setInterval(() => {
         nextSlide();
       }, 4000);
     }
+  }
+
+  function setRating(value) {
+    newEvaluation = value;
   }
 </script>
 
@@ -88,8 +210,7 @@
   <p>Reštaurácia sa nenašla.</p>
 {:else}
   <div class="detail-container">
-    <!-- Luxusný slider -->
-    {#if restaurant.gallery && restaurant.gallery.images && restaurant.gallery.images.length > 0}
+    {#if restaurant.gallery?.images?.length > 0}
       <div class="slider-container">
         <div class="slider">
           {#each restaurant.gallery.images as image, i}
@@ -101,8 +222,11 @@
             />
           {/each}
         </div>
-        <button class="prev" on:click={prevSlide}>❮</button>
-        <button class="next" on:click={nextSlide}>❯</button>
+        {#if restaurant.gallery.images.length > 1}
+          <button class="prev" on:click={prevSlide}>❮</button>
+          <button class="next" on:click={nextSlide}>❯</button>
+        {/if}
+
       </div>
     {:else}
       <img class="main-image" src="placeholder-image.jpg" alt="Obrázok nie je dostupný" />
@@ -128,11 +252,75 @@
 
     <h2>Mapa</h2>
     {#if lat && lng}
-      <iframe width="600" height="450" style="border:0" loading="lazy" allowfullscreen src={mapUrl}></iframe>
+      <iframe
+        width="600"
+        height="450"
+        style="border:0"
+        loading="lazy"
+        allowfullscreen
+        src={mapUrl}
+      ></iframe>
     {:else}
       <p>Načítavam mapu...</p>
     {/if}
-  </div>
+    reviews
+
+    <h2>Recenzie</h2>
+    {#if reviews.length > 0}
+      <ul class="review-list">
+        {#each reviews as review}
+          <li class="review">
+            <strong>{review.mail}</strong> – 
+            <span class="stars">
+              {#each Array(5) as _, i}
+                <span class="star {i < review.evaluation ? 'filled' : ''}">★</span>
+              {/each}
+            </span>
+            <p>{review.text}</p>
+            {#if isAuthenticated && (userEmail === review.mail)}
+              <button on:click={() => editReview(review)}>Upraviť</button>
+              <button on:click={() => deleteReview(review.id)}>Vymazať</button>
+            {/if}
+            {#if editingReviewId === review.id}
+              <div class="edit-form">
+                <h3>Upraviť recenziu</h3>
+                <textarea bind:value={editingText}></textarea>
+                <div class="rating">
+                  {#each Array(5) as _, i}
+                    <span class="star {i < editingEvaluation ? 'filled' : ''}" on:click={() => setEditRating(i + 1)}>★</span>
+                  {/each}
+                </div>
+                <button on:click={submitEditReview}>Uložiť zmeny</button>
+                <button on:click={() => editingReviewId = null}>Zrušiť</button>
+              </div>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    {:else}
+        <p>Zatiaľ žiadne recenzie.</p>
+    {/if}
+
+    
+
+    {#if isAuthenticated}
+      <div class="review-form">
+        <label>Pridať recenziu:</label>
+        <textarea bind:value={newComment} placeholder="Napíš svoju recenziu..."></textarea>
+        <label>Hodnotenie:</label>
+        <div class="rating">
+          {#each Array(5) as _, i}
+            <span class="star {i < newEvaluation ? 'filled' : ''}" on:click={() => setRating(i + 1)}>★</span>
+          {/each}
+        </div>
+        <button on:click={submitReview} disabled={isSubmitting}>
+          {isSubmitting ? "Odosielanie..." : "Odoslať"}
+        </button>
+      </div>
+    {:else}
+      <p>Prihláste sa na pridanie recenzie.</p>
+    {/if}
+    </div>
 {/if}
 
 <style>
@@ -141,6 +329,71 @@
     margin: 2rem auto;
     padding: 0 1rem;
     font-family: sans-serif;
+  }
+  .review-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .stars {
+    font-size: 1.2rem;
+  }
+  .rating {
+    display: flex;
+    gap: 5px;
+    margin: 10px 0;
+  }
+
+  .star {
+    font-size: 2rem;
+    cursor: pointer;
+    color: gray; 
+    transition: color 0.3s;
+  }
+
+  .star.filled {
+    color: gold; 
+  }
+
+  .star:hover {
+    color: orange; 
+  }
+  .review {
+    background: #f9f9f9;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+
+  .review-form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 20px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+  }
+  input {
+    width: 60px;
+    margin: 10px 0;
+  }
+
+  button {
+    padding: 10px;
+    border: none;
+    background: #28a745;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+
+  button:disabled {
+    background: gray;
   }
 
   .slider-container {
@@ -190,6 +443,15 @@
 
   .next {
     right: 10px;
+  }
+
+  .main-image {
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
   }
 
   h1 {

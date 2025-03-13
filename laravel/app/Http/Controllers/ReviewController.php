@@ -61,39 +61,44 @@ class ReviewController extends Controller
     
     public function update(Request $request, $id)
     {
-        $review = Review::find($id);
-        if (!$review) {
-            return response()->json(['message' => 'Review not found'], Response::HTTP_NOT_FOUND);
+        $review = Review::findOrFail($id);
+
+        if ($review->mail !== $request->input('mail') && !$request->user()->isAdmin()) {
+            return response()->json(['message' => 'Nemáte právo upraviť tento komentár.'], 403);
         }
 
-        $validator = Validator::make($request->all(), [
-            'mail' => 'required|email',
-            'id_post' => 'nullable|integer',
-            'id_restaurant' => 'nullable|integer',
-            'text' => 'required|string',
-            'evaluation' => 'required|integer|min:1|max:5',
-          ]);
-          
+        $validated = $request->validate([
+            'text'       => 'sometimes|string',
+            'evaluation' => 'sometimes|integer|min:1|max:5',
+        ]);
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), Response::HTTP_BAD_REQUEST);
-        }
+        $review->update($validated);
 
-        $review->update($request->all());
-
-        return response()->json($review, Response::HTTP_OK);
+        return response()->json($review, 200);
     }
 
-   
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        $request->validate([
+            'mail' => 'required|email'
+        ]);
+
+        // Skúsime nájsť recenziu podľa ID
         $review = Review::find($id);
         if (!$review) {
-            return response()->json(['message' => 'Review not found'], Response::HTTP_NOT_FOUND);
+            return response()->json(['message' => 'Komentár neexistuje.'], 404);
+        }
+
+        // Overíme, či používateľ môže recenziu vymazať
+        if ($review->mail !== $request->input('mail')) {
+            return response()->json(['message' => 'Nemáte právo zmazať tento komentár.'], 403);
         }
 
         $review->delete();
-
-        return response()->json(['message' => 'Review deleted successfully'], Response::HTTP_OK);
+        return response()->json(['message' => 'Komentár bol vymazaný.'], 200);
     }
+
+
+
+
 }

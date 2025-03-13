@@ -11,7 +11,7 @@ class Review extends Model
 
     protected $table = 'review';
 
-    protected $primaryKey = 'id_post';
+    protected $primaryKey = 'id';
 
     public $incrementing = true;
     public $timestamps = false;

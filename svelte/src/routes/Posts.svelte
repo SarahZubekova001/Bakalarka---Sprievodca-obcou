@@ -1,6 +1,5 @@
 <script>
   import { onMount } from "svelte";
-
   export let seasonId;
   export let categoryId;
   export let goTo;
@@ -11,19 +10,23 @@
   let isLoading = true;
   let errorMessage = "";
 
+  function averageRating(post) {
+    if (!post.reviews || post.reviews.length === 0) return 0;
+    let total = 0;
+    post.reviews.forEach(r => total += r.evaluation);
+    return total / post.reviews.length;
+  }
+
+
   async function fetchPosts() {
     try {
       const queryParams = new URLSearchParams();
       if (seasonId) queryParams.append("season_id", seasonId);
       if (categoryId) queryParams.append("category_id", categoryId);
-
       const url = `http://localhost:8000/api/posts?${queryParams.toString()}`;
-      console.log("Načítavam príspevky z:", url);
-
       const res = await fetch(url);
       if (!res.ok) throw new Error("Nepodarilo sa načítať príspevky");
       posts = await res.json();
-      console.log("Načítané príspevky:", posts);
     } catch (err) {
       console.error(err);
       errorMessage = "Nepodarilo sa načítať príspevky.";
@@ -58,14 +61,25 @@
     {#each posts as post}
       <div class="category-card" on:click={() => goTo("post-detail", post.id)}>
         {#if post.gallery && post.gallery.images && post.gallery.images.length > 0}
-          <img class="category-image"
-            src={`http://localhost:8000/storage/${post.gallery.images[0].path}`}
-            alt={post.name} />
+          <img class="category-image" src={`http://localhost:8000/storage/${post.gallery.images[0].path}`} alt={post.name} />
         {:else}
           <img class="category-image" src="placeholder-image.jpg" alt="Obrázok nie je dostupný" />
         {/if}
         <h2>{post.name}</h2>
-        {#if isAuthenticated && userRole === 'admin'} 
+        
+        {#if post.reviews && post.reviews.length > 0}
+          <div class="rating-display">
+            {#each Array(5) as _, i}
+              <span class="star {i < Math.round(averageRating(post)) ? 'filled' : ''}">★</span>
+            {/each}
+            <span class="avg-rating">({averageRating(post).toFixed(1)})</span>
+          </div>
+        {:else}
+          <div class="rating-display">
+            <span>Žiadne hodnotenie</span>
+          </div>
+        {/if}
+        {#if isAuthenticated&& userRole === 'admin'} 
           <div class="buttons">
             <button on:click={() => goTo("edit-post", post.id)} on:click|stopPropagation>📝 Upraviť</button>
             <button on:click={() => deletePost(post.id)}>🗑️ Vymazať</button>
@@ -80,30 +94,27 @@
   .top-bar {
     width: 100%;
     display: flex;
-    justify-content: flex-start; /* Zarovnané doľava */
+    justify-content: flex-start;
     padding: 15px 25px;
-    margin-top: 80px; /* Pridávame odsadenie kvôli navbaru */
+    margin-top: 80px;
   }
-
   .add-post-btn {
     padding: 10px 18px;
     font-size: 15px;
     font-weight: bold;
     color: white;
-    background-color:rgba(146, 158, 161, 0.67);
+    background-color: rgba(146,158,161,0.67);
     border: none;
     border-radius: 20px;
     cursor: pointer;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     transition: transform 0.2s, box-shadow 0.2s;
   }
-
   .add-post-btn:hover {
     transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.25);
   }
-
   .container {
     display: flex;
     flex-wrap: wrap;
@@ -113,24 +124,21 @@
     font-family: sans-serif;
     background: none;
   }
-
   .category-card {
     flex: 1 1 300px;
     max-width: 350px;
     background: #fff;
     border-radius: 12px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     padding: 20px;
     text-align: center;
     transition: transform 0.3s, box-shadow 0.3s;
     cursor: pointer;
   }
-
   .category-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.15);
   }
-
   .category-image {
     width: 100%;
     height: 250px;
@@ -140,25 +148,39 @@
     opacity: 0.85;
     transition: transform 0.4s ease, opacity 0.4s ease, box-shadow 0.4s ease;
   }
-
   .category-image:hover {
     opacity: 1;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
   }
-
   h2 {
     font-size: 22px;
     margin: 10px 0;
     color: #333;
   }
-
+  .rating-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+  }
+  .star {
+    font-size: 1.2rem;
+    color: gray;
+  }
+  .star.filled {
+    color: gold;
+  }
+  .avg-rating {
+    margin-left: 6px;
+    font-size: 1rem;
+    color: #555;
+  }
   .buttons {
     display: flex;
     justify-content: space-around;
     margin-top: 15px;
     gap: 10px;
   }
-
   button {
     position: relative;
     display: inline-flex;
@@ -172,17 +194,15 @@
     font-weight: bold;
     font-size: 1rem;
     color: #fff;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    background-color: rgb(200, 195, 195);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    background-color: rgb(200,195,195);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
     transition: transform 0.3s, box-shadow 0.3s;
   }
-
   button:hover {
     transform: scale(1.05);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.25);
   }
-
   button::after {
     content: "";
     position: absolute;
@@ -195,7 +215,6 @@
     background: linear-gradient(to bottom, rgba(255,255,255,0.4), rgba(255,255,255,0.05));
     pointer-events: none;
   }
-
   .message {
     text-align: center;
     font-size: 20px;
