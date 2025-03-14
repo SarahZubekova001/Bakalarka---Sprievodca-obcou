@@ -26,6 +26,6 @@ class Image extends Model
 
     public function gallery()
     {
-        return $this->belongsTo(Gallery::class, 'id_gallery'); // Ak je súčasťou galérie
+        return $this->belongsTo(Gallery::class, 'id_gallery'); 
     }
 }

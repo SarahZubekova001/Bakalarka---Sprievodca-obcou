@@ -1,12 +1,13 @@
 <script>
   import { onMount, createEventDispatcher } from "svelte";
-  export let goTo; // Pridaj prop goTo, ktorý dostávaš z rodiča
+  export let goTo; 
 
   const dispatch = createEventDispatcher();
 
   let town_name = "";
   let description = "";
-  let logo = "";
+  let logoFile = null;      
+  let galleryFiles = [];    
   let errorMessage = "";
   let isLoading = true;
 
@@ -18,7 +19,6 @@
       
       town_name = data.town_name;
       description = data.description;
-      logo = data.logo;
     } catch (err) {
       errorMessage = err.message;
     } finally {
@@ -26,25 +26,39 @@
     }
   });
 
+  function handleLogoFileChange(e) {
+    logoFile = e.target.files[0];
+  }
+
+  function handleGalleryFilesChange(e) {
+    galleryFiles = Array.from(e.target.files);
+  }
+
   async function submitForm() {
     try {
       errorMessage = "";
+      const formData = new FormData();
+      formData.append("town_name", town_name);
+      formData.append("description", description);
+
+      if (logoFile) {
+        formData.append("logo_file", logoFile);
+      }
+      
+      if (galleryFiles.length > 0) {
+        for (let file of galleryFiles) {
+          formData.append("gallery_files[]", file);
+        }
+      }
+
       const res = await fetch("http://localhost:8000/api/maininfo", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ town_name, description, logo })
+        body: formData
       });
       if (!res.ok) throw new Error("Nepodarilo sa uložiť údaje.");
       const updatedData = await res.json();
       
-      town_name = updatedData.town_name;
-      description = updatedData.description;
-      logo = updatedData.logo;
-      
-      dispatch("updateSuccess");
       alert("Údaje boli úspešne aktualizované!");
-      
-      // Presmerovanie na stránku maininfo
       goTo("maininfo");
     } catch (err) {
       errorMessage = err.message;
@@ -58,7 +72,7 @@
   {#if errorMessage}
     <p style="color: red;">{errorMessage}</p>
   {/if}
-  <form on:submit|preventDefault={submitForm}>
+  <form on:submit|preventDefault={submitForm} enctype="multipart/form-data">
     <div>
       <label for="town_name">Mesto / Názov:</label>
       <input id="town_name" type="text" bind:value={town_name} required />
@@ -68,8 +82,12 @@
       <textarea id="description" bind:value={description}></textarea>
     </div>
     <div>
-      <label for="logo">Logo (ID):</label>
-      <input id="logo" type="number" bind:value={logo} />
+      <label for="logo_file">Logo súbor:</label>
+      <input id="logo_file" type="file" accept="image/*" on:change={handleLogoFileChange} />
+    </div>
+    <div>
+      <label for="gallery_files">Galéria obrázkov:</label>
+      <input id="gallery_files" type="file" accept="image/*" multiple on:change={handleGalleryFilesChange} />
     </div>
     <button type="submit">Uložiť zmeny</button>
   </form>

@@ -88,6 +88,11 @@
         </ul>
       </li>
 
+      <li class="dropdown">
+        <button class="dropbtn" on:click={() => goTo("maininfo")}>O Obci</button>
+            
+      </li>
+
       <ul class="nav-links">
         {#if isAuthenticated}
           <!-- Používateľské menu -->
@@ -111,6 +116,7 @@
           <li>
             <button class="auth-button" on:click={() => goTo("login")}>Prihlásiť</button>
             <button class="auth-button" on:click={() => goTo("register")}>Registrovať sa</button>
+
           </li>
         {/if}
       </ul>

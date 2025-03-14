@@ -24,6 +24,7 @@ class GalleryController extends Controller
             'posts' => Post::all(),
             'restaurants' => Restaurant::all(),
             'hikings' => Hiking::all(),
+            'main_info' => MainInfo::find(1),
         ]);
     }
 
@@ -33,6 +34,7 @@ class GalleryController extends Controller
             'id_post' => 'nullable|exists:post,id',
             'id_restaurant' => 'nullable|exists:restaurant,id',
             'id_hiking' => 'nullable|exists:hiking,id',
+            'id_main_info' => 'required|exists:main_info,id',
         ]);
 
         $gallery = Gallery::create($validated);

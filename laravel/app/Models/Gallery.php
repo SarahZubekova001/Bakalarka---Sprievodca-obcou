@@ -25,10 +25,14 @@ class Gallery extends Model
     public function hiking() {
         return $this->belongsTo(Hiking::class, 'id_hiking')->withDefault();
     }
+    public function mainInfo()
+    {
+        return $this->belongsTo(MainInfo::class, 'id_main_info');
+    }
     public function images()
-{
-    return $this->hasMany(Image::class, 'id_gallery');
-}
+    {
+        return $this->hasMany(Image::class, 'id_gallery');
+    }
 
     
 }

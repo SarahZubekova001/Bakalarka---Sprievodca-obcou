@@ -7,6 +7,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\MainInfoController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/', function () {
@@ -29,4 +30,6 @@ Route::middleware('api')->prefix('api')->group(function () {
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('posts', PostController::class);
     Route::apiResource('reviews', ReviewController::class);
+    Route::get('/maininfo', [MainInfoController::class, 'showSingle']);
+    Route::post('/maininfo', [MainInfoController::class, 'storeOrUpdate']);
 });

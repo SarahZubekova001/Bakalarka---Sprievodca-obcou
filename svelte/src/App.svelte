@@ -6,6 +6,10 @@
   import Login from "./routes/Login.svelte";
   import Register from "./routes/Register.svelte";
   import ManageUsers from "./routes/ManageUsers.svelte";
+  
+  import MainInfo from "./routes/MainInfo.svelte";
+  import NewMainInfo from "./routes/NewMainInfo.svelte";
+  import EditMainInfo from "./routes/EditMainInfo.svelte";
 
   import Restaurants from "./routes/Restaurants.svelte";
   import AddRestaurant from "./routes/NewRestaurant.svelte";
@@ -231,6 +235,12 @@
 
 {:else if page === "manage-accounts"}
   <ManageUsers />
+{:else if page === "maininfo"}
+  <MainInfo {goTo} {isAuthenticated} {userRole}/>
+{:else if page === "add-maininfo"}
+  <NewMainInfo {goTo} {isAuthenticated} {userRole}/>
+{:else if page === "edit-maininfo"}
+  <EditMainInfo {goTo} {isAuthenticated} {userRole}/>
 
 {:else if page === "login"}
   <Login on:loginSuccess={async() => {
