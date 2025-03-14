@@ -34,7 +34,7 @@
   let userEmail = ""; 
 
   function updatePageFromUrl() {
-    let hash = window.location.hash.slice(1); // odstráni '#'
+    const hash = window.location.hash.slice(1); 
     if (!hash) {
       page = "seasons";
       currentId = null;
@@ -42,13 +42,19 @@
       currentCategoryId = null;
       return;
     }
-    const parts = hash.split("/");
+
+    const parts = hash.split("/"); 
+
     page = parts[0] || "seasons";
 
-    if (page === "posts" && parts.length >= 3) {
-      currentSeasonId = parts[1];
-      currentCategoryId = parts[2];
-    } else {
+    if (page === "categories" && parts.length >= 2) {
+      currentSeasonId = parts[1] === "null" ? null : parts[1];
+    }
+    else if (page === "posts" && parts.length >= 3) {
+      currentSeasonId = parts[1] === "null" ? null : parts[1];
+      currentCategoryId = parts[2] === "null" ? null : parts[2];
+    }
+    else {
       currentId = parts.length > 1 ? parts[1] : null;
       currentSeasonId = null;
       currentCategoryId = null;
@@ -56,26 +62,47 @@
   }
 
   function goTo(newPage, id = null) {
-  if (typeof id === "object" && id !== null) {
-    currentSeasonId = id.seasonId ?? null;
-    currentCategoryId = id.categoryId ?? null;
+    console.log("Navigácia na:", newPage, "s ID:", id);
 
-    let url = `#${newPage}`;
-    if (currentSeasonId) url += `/${currentSeasonId}`;
-    if (currentCategoryId) url += `/${currentCategoryId}`;
+    if (newPage === "categories") {
+      if (id?.seasonId !== undefined) {
+        currentSeasonId = id.seasonId;
+      }
+      const url = `#categories/${currentSeasonId ?? "null"}`;
 
-    history.pushState(
-      { page: newPage, seasonId: currentSeasonId, categoryId: currentCategoryId },
-      "",
-      url
-    );
-    page = newPage;
-  } else {
-    currentId = id;
-    history.pushState({ page: newPage, id }, "", `#${newPage}${id ? `/${id}` : ""}`);
+      history.pushState(
+        { page: newPage, seasonId: currentSeasonId },
+        "",
+        url
+      );
+
+      console.log("Nová sezóna ID:", currentSeasonId);
+    }
+    else if (newPage === "posts") {
+      if (id?.seasonId !== undefined) {
+        currentSeasonId = id.seasonId;
+      }
+      if (id?.categoryId !== undefined) {
+        currentCategoryId = id.categoryId;
+      }
+      const url = `#posts/${currentSeasonId ?? "null"}/${currentCategoryId ?? "null"}`;
+
+      history.pushState(
+        { page: newPage, seasonId: currentSeasonId, categoryId: currentCategoryId },
+        "",
+        url
+      );
+
+      console.log("Nová sezóna ID:", currentSeasonId, "Nová kategória ID:", currentCategoryId);
+    }
+    else {
+      currentId = id;
+      history.pushState({ page: newPage, id }, "", `#${newPage}${id ? `/${id}` : ""}`);
+    }
+
     page = newPage;
   }
-}
+
 
   function handlePopState(event) {
     if (event.state) {
@@ -156,7 +183,7 @@
   }
 
   onMount(() => {
-    updatePageFromUrl(); // Načítanie stránky podľa URL pri prvom spustení
+    updatePageFromUrl();
     checkAuth();
     window.addEventListener("popstate", handlePopState);
   });
@@ -181,7 +208,7 @@
   <Restaurants {goTo} {isAuthenticated} {userRole}/>
 
 {:else if page === "categories"}
-  <Categories {goTo} {isAuthenticated} {userRole}/>
+  <Categories {goTo} {isAuthenticated} {userRole} seasonId={currentSeasonId}/>
 {:else if page === "add-category"}
   <AddCategory {goTo} />
 {:else if page === "edit-category"}
@@ -206,7 +233,8 @@
   <ManageUsers />
 
 {:else if page === "login"}
-  <Login on:loginSuccess={() => {
+  <Login on:loginSuccess={async() => {
+    await checkAuth();
     isAuthenticated = true;
     goTo("seasons");
   }}/>

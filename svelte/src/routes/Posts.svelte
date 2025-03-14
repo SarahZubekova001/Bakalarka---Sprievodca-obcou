@@ -19,21 +19,30 @@
 
 
   async function fetchPosts() {
+
     try {
-      const queryParams = new URLSearchParams();
-      if (seasonId) queryParams.append("season_id", seasonId);
-      if (categoryId) queryParams.append("category_id", categoryId);
-      const url = `http://localhost:8000/api/posts?${queryParams.toString()}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Nepodarilo sa načítať príspevky");
-      posts = await res.json();
+        const queryParams = new URLSearchParams();
+        
+        if (seasonId && seasonId !== "null") {
+            queryParams.append("season_id", seasonId);
+        }
+        if (categoryId && categoryId !== "null") {
+            queryParams.append("category_id", categoryId);
+        }
+
+        const url = `http://localhost:8000/api/posts?${queryParams.toString()}`;
+
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Nepodarilo sa načítať príspevky");
+
+        posts = await res.json();
     } catch (err) {
-      console.error(err);
-      errorMessage = "Nepodarilo sa načítať príspevky.";
+        console.error(err);
+        errorMessage = "Nepodarilo sa načítať príspevky.";
     } finally {
-      isLoading = false;
+        isLoading = false;
     }
-  }
+}
 
   async function deletePost(id) {
     if (!confirm("Naozaj chceš vymazať tento príspevok?")) return;

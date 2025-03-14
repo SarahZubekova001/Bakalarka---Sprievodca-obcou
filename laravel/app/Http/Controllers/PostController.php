@@ -16,13 +16,8 @@ class PostController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Post::with([
-            'category',
-            'season',
-            'address',
-            'gallery.images',
-            'reviews' 
-        ]);
+        \Log::info("API - season_id: " . $request->season_id . " | category_id: " . $request->category_id);
+        $query = Post::with(['category', 'season', 'address', 'gallery.images', 'reviews']);
 
         if ($request->filled('season_id')) {
             $query->where('id_season', $request->season_id);
@@ -32,9 +27,9 @@ class PostController extends Controller
         }
 
         $posts = $query->get();
-
         return response()->json($posts, 200, [], JSON_PRETTY_PRINT);
     }
+
 
 
     

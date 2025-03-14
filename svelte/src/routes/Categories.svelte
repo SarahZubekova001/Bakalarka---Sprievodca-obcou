@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   export let goTo;
   export let isAuthenticated;
-  export let seasonId = null;
+  export let seasonId;
   export let userRole;
 
   let categories = [];

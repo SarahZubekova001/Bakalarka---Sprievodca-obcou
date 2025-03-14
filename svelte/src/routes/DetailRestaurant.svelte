@@ -14,7 +14,7 @@
   let editingText = "";
   let editingEvaluation = 5;
   let newComment = "";     
-  let newEvaluation = 5;    
+  let newEvaluation = 0;    
   let isSubmitting = false;
 
   let lat = null;

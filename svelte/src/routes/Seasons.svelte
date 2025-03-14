@@ -131,7 +131,7 @@
 
 <div class="container">
   {#each seasons as season}
-    <div class="season-card" on:click={() => goTo('categories')}>
+    <div class="season-card" on:click={() => goTo('categories', { seasonId: season.id })}>
       <img src={`http://localhost:8000/storage/${season.image.path}`} alt={season.name} />
       <h2>{season.name}</h2>
 
