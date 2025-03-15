@@ -8,6 +8,8 @@ use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\MainInfoController;
+use App\Http\Controllers\AdditionalInfoController;
+use App\Http\Controllers\ImageController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/', function () {
@@ -25,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 Route::middleware('api')->prefix('api')->group(function () {
+    Route::apiResource('images', ImageController::class);
     Route::apiResource('seasons', SeasonController::class);
     Route::apiResource('restaurants', RestaurantController::class);
     Route::apiResource('categories', CategoryController::class);
@@ -32,4 +35,5 @@ Route::middleware('api')->prefix('api')->group(function () {
     Route::apiResource('reviews', ReviewController::class);
     Route::get('/maininfo', [MainInfoController::class, 'showSingle']);
     Route::post('/maininfo', [MainInfoController::class, 'storeOrUpdate']);
+    Route::apiResource('additional-info', AdditionalInfoController::class);
 });

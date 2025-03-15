@@ -8,6 +8,7 @@
   let description = "";
   let logoFile = null;      
   let galleryFiles = [];    
+   let existingImages = []; 
   let errorMessage = "";
   let isLoading = true;
 
@@ -19,6 +20,7 @@
       
       town_name = data.town_name;
       description = data.description;
+      existingImages = data.gallery?.images || [];
     } catch (err) {
       errorMessage = err.message;
     } finally {
@@ -58,8 +60,25 @@
       if (!res.ok) throw new Error("Nepodarilo sa uložiť údaje.");
       const updatedData = await res.json();
       
-      alert("Údaje boli úspešne aktualizované!");
       goTo("maininfo");
+      window.location.reload();
+
+    } catch (err) {
+      errorMessage = err.message;
+    }
+  }
+
+  async function deleteExistingImage(imageId) {
+    if (!confirm("Naozaj chcete vymazať tento obrázok?")) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/images/${imageId}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Chyba pri mazaní obrázka.");
+      }
+      existingImages = existingImages.filter(img => img.id !== imageId);
     } catch (err) {
       errorMessage = err.message;
     }
@@ -81,6 +100,21 @@
       <label for="description">Popis:</label>
       <textarea id="description" bind:value={description}></textarea>
     </div>
+    {#if existingImages.length > 0}
+      <div class="existing-gallery">
+        {#each existingImages as img}
+          <div class="image-wrapper">
+            <img 
+              src={`http://localhost:8000/storage/${img.path}`}
+              alt="Obrázok" 
+              class="gallery-img"
+            />
+            <button type="button" class="delete-img-btn" on:click={() => deleteExistingImage(img.id)}>X</button>
+          </div>
+        {/each}
+      </div>
+    {/if}
+
     <div>
       <label for="logo_file">Logo súbor:</label>
       <input id="logo_file" type="file" accept="image/*" on:change={handleLogoFileChange} />
@@ -124,5 +158,37 @@
   }
   button:hover {
     background-color: #218838;
+  }
+
+  .existing-gallery {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+    flex-wrap: wrap;
+  }
+  .image-wrapper {
+    position: relative;
+  }
+  .gallery-img {
+    width: 120px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+  }
+  .delete-img-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(220,53,69,0.8);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 </style>

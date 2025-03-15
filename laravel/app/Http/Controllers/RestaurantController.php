@@ -74,9 +74,9 @@ class RestaurantController extends Controller
     }
 
 
-    public function show(Restaurant $restaurant)
+    public function show($id)
     {
-        $restaurant->load('address.town', 'gallery.images');
+        $restaurant = Restaurant::with('address.town', 'gallery.images')->findOrFail($id);
         return response()->json($restaurant);
     }
 

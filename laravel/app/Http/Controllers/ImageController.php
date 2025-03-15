@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Image;
 
 class ImageController extends Controller
@@ -23,4 +24,16 @@ class ImageController extends Controller
 
         return response()->json(['id' => $image->id, 'path' => $image->path], 201);
     }
+
+    public function destroy($id)
+{
+    $image = Image::findOrFail($id);
+
+    Storage::disk('public')->delete($image->path);
+
+    $image->delete();
+
+    return response()->json(['message' => 'Obrázok bol odstránený!'], 200);
+}
+
 }

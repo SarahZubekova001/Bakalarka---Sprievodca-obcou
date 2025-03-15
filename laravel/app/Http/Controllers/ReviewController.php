@@ -77,28 +77,25 @@ class ReviewController extends Controller
         return response()->json($review, 200);
     }
 
+
     public function destroy(Request $request, $id)
     {
         $request->validate([
             'mail' => 'required|email'
         ]);
 
-        // Skúsime nájsť recenziu podľa ID
         $review = Review::find($id);
         if (!$review) {
             return response()->json(['message' => 'Komentár neexistuje.'], 404);
         }
+        $isAdmin = $request->user() && $request->user()->role === 'admin';
 
-        // Overíme, či používateľ môže recenziu vymazať
-        if ($review->mail !== $request->input('mail')) {
+        if ($review->mail !== $request->input('mail') && !$isAdmin) {
             return response()->json(['message' => 'Nemáte právo zmazať tento komentár.'], 403);
         }
 
         $review->delete();
         return response()->json(['message' => 'Komentár bol vymazaný.'], 200);
     }
-
-
-
 
 }

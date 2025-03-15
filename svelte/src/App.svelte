@@ -10,6 +10,10 @@
   import MainInfo from "./routes/MainInfo.svelte";
   import NewMainInfo from "./routes/NewMainInfo.svelte";
   import EditMainInfo from "./routes/EditMainInfo.svelte";
+  import AdditionalInfo from "./routes/MainInfo.svelte";
+  import NewAdditionalInfo from "./routes/NewAdditionalInfo.svelte";
+  import EditAdditionalInfo from "./routes/EditAdditionalInfo.svelte";
+
 
   import Restaurants from "./routes/Restaurants.svelte";
   import AddRestaurant from "./routes/NewRestaurant.svelte";
@@ -66,7 +70,6 @@
   }
 
   function goTo(newPage, id = null) {
-    console.log("Navigácia na:", newPage, "s ID:", id);
 
     if (newPage === "categories") {
       if (id?.seasonId !== undefined) {
@@ -177,14 +180,29 @@
   }
 
   async function logout() {
-    await fetch("http://localhost:8000/api/logout", {
+  console.log("Odhlasujem...");
+  try {
+    const res = await fetch("http://localhost:8000/api/logout", {
       method: "POST",
       credentials: "include"
     });
+    console.log("Logout response status:", res.status);
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.error("Logout error:", errorData);
+      throw new Error(errorData.message || "Logout failed");
+    }
+  } catch (err) {
+    console.error("Chyba pri odhlásení:", err);
+  } finally {
     localStorage.removeItem("access_token");
     isAuthenticated = false;
     goTo("login");
+    window.location.reload();
   }
+}
+
+
 
   onMount(() => {
     updatePageFromUrl();
@@ -225,7 +243,7 @@
 {:else if page === "edit-post"}
   <EditPost postId={currentId} {goTo}/>
 {:else if page === "post-detail"}
-  <DetailPosts postId={currentId} {isAuthenticated} userEmail={userEmail}/>
+  <DetailPosts postId={currentId} {isAuthenticated} {userRole} userEmail={userEmail}/>
 
 {:else if page === "register"}
   <Register on:registerSuccess={() => {
@@ -241,6 +259,12 @@
   <NewMainInfo {goTo} {isAuthenticated} {userRole}/>
 {:else if page === "edit-maininfo"}
   <EditMainInfo {goTo} {isAuthenticated} {userRole}/>
+
+{:else if page === "add-additional-info"}
+  <NewAdditionalInfo {goTo} {isAuthenticated} {userRole}/>
+{:else if page === "edit-additional-info"}
+  <EditAdditionalInfo {goTo} additionalInfoId={currentId}/>
+
 
 {:else if page === "login"}
   <Login on:loginSuccess={async() => {

@@ -125,46 +125,52 @@ class PostController extends Controller
             'id_season' => 'nullable|exists:season,id',
             'id_category' => 'required|exists:category,id',
             'url_address' => 'nullable|string|max:255',
-            'images' => 'nullable|array', 
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
+            'images' => 'nullable|array',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
-        $town = Town::where('postal_code', $validated['postal_code'])->first();
+
+        $town = \App\Models\Town::where('postal_code', $validated['postal_code'])->first();
         if ($town) {
             $town->update(['name' => $validated['town']]);
         } else {
-            $town = Town::create([
+            $town = \App\Models\Town::create([
                 'postal_code' => $validated['postal_code'],
                 'name' => $validated['town']
             ]);
         }
 
-        $address = Address::findOrFail($post->id_address);
+        $address = \App\Models\Address::findOrFail($post->id_address);
         $address->update([
             'street' => $validated['street'],
             'descriptive_number' => $validated['descriptive_number'],
             'postal_code' => $validated['postal_code'],
         ]);
 
-        $post->update($validated);
+        $post->update([
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? $post->description,
+            'opening_hours' => $validated['opening_hours'] ?? $post->opening_hours,
+            'id_season' => $validated['id_season'] ?? $post->id_season,
+            'id_category' => $validated['id_category'] ?? $post->id_category,
+            'url_address' => $validated['url_address'] ?? $post->url_address,
+        ]);
 
-        if (!$post->gallery) {
-            $gallery = Gallery::create(['id_post' => $post->id]);
-        } else {
-            $gallery = $post->gallery;
-        }
+        $gallery = $post->gallery ?: \App\Models\Gallery::create(['id_post' => $post->id]);
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $imageFile) {
                 $path = $imageFile->store('images', 'public');
-                Image::create([
+                \App\Models\Image::create([
                     'id_gallery' => $gallery->id,
                     'path' => $path,
                 ]);
             }
         }
 
-        return redirect()->route('posts.index')->with('success', 'Príspevok bol aktualizovaný!');
+        // Vrátime JSON s aktualizovaným príspevkom
+        return response()->json($post->load('gallery.images'), 200);
     }
+
 
     public function destroy(Post $post)
     {

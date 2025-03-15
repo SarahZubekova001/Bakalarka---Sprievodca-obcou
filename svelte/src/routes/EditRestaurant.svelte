@@ -36,9 +36,7 @@
       descriptive_number = res.address ? res.address.descriptive_number || "" : "";
       url_address = res.url_address || "";
 
-      existingImages = res.gallery && res.gallery.images
-        ? res.gallery.images.map(img => img.path)
-        : [];
+      existingImages = (res.gallery && res.gallery.images) ? res.gallery.images : [];
     } catch (err) {
       errorMessage = "Chyba pri načítaní reštaurácie.";
       console.error(err);
@@ -74,6 +72,24 @@
 
   function handleFileChange(e) {
     imageFiles = Array.from(e.target.files);
+  }
+
+  async function deleteExistingImage(imageId) {
+    if (!confirm("Naozaj chcete vymazať tento obrázok?")) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/images/${imageId}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Chyba pri mazaní obrázka.");
+      }
+      // Odfiltrujeme z local state
+      existingImages = existingImages.filter(img => img.id !== imageId);
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
   }
 </script>
 
@@ -125,18 +141,20 @@
         <input id="url_address" type="text" bind:value={url_address} />
       </div>
 
-      <div class="form-group">
-        <label>Existujúce obrázky:</label>
+      {#if existingImages.length > 0}
         <div class="image-preview">
           {#each existingImages as image}
-            <img
-              src={`http://localhost:8000/storage/${image}`}
-              alt="Reštaurácia"
-              class="preview-img"
-            />
+            <div class="img-wrapper">
+              <img
+                src={`http://localhost:8000/storage/${image.path}`}
+                alt="Reštaurácia"
+                class="preview-img"
+              />
+              <button type="button" class="delete-img-btn" on:click={() => deleteExistingImage(image.id)}>✕</button>
+            </div>
           {/each}
         </div>
-      </div>
+      {/if}
 
       <div class="form-group">
         <label for="images">Nové obrázky:</label>
@@ -193,10 +211,14 @@
 
   .image-preview {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
-    margin-top: 10px;
+    margin: 10px 0;
   }
-
+  .img-wrapper {
+    position: relative;
+    display: inline-block;
+  }
   .preview-img {
     width: 100px;
     height: 100px;
@@ -224,4 +246,25 @@
   .custom-button:hover {
     transform: scale(1.05);
   }
+
+  .delete-img-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  
+  width: 24px;
+  height: 24px;
+  background: rgba(220,53,69,0.8); 
+  border: none;
+  border-radius: 4px; /* Mierne zaoblené rohy. Ak chceš ostré, nastav 0. */
+  
+  color: #fff;
+  font-size: 16px;
+  display: flex; 
+  align-items: center;  
+  justify-content: center; 
+  cursor: pointer;
+}
+
+
 </style>

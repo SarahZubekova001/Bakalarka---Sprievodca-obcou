@@ -29,12 +29,23 @@
       const res = await fetch("http://localhost:8000/api/maininfo");
       if (!res.ok) throw new Error("Nepodarilo sa načítať main_info");
       mainInfo = await res.json();
-      console.log("mainInfo data:", mainInfo);
     } catch (err) {
       console.error(err);
       errorMessage = err.message;
     } finally {
       isLoadingMainInfo = false;
+    }
+  }
+  async function deleteSeason(id) {
+    if (!confirm("Naozaj chcete vymazať túto sezónu?")) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/seasons/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Chyba pri mazaní sezóny.");
+      // Ak je všetko OK, odfiltrujeme vymazanú sezónu z local state
+      seasons = seasons.filter(season => season.id !== id);
+    } catch (err) {
+      console.error(err);
+      alert("Nepodarilo sa vymazať sezónu.");
     }
   }
 
@@ -115,11 +126,14 @@
         {/if}
       </div>
     {/each}
+    <div class="season-card" on:click={() => goTo('restaurants')}>
+      <img src={`http://localhost:8000/storage/images/restaurants.jpg`} alt="Reštaurácie" />
+      <h2>Reštaurácie</h2>
+    </div>
   </div>
 {/if}
 
 <style>
-  /* SLIDER CONTAINER: roztiahnuté cez celú šírku */
   .slider-container {
     position: relative;
     left: 50%;
@@ -132,14 +146,12 @@
     background: #000;
   }
 
-  /* Slider wrapper */
   .slider {
     display: flex;
     height: 100%;
     transition: transform 0.5s ease-in-out;
   }
 
-  /* Každý slide – 100% viewport width */
   .slide {
     min-width: 100vw;
     height: 100%;
@@ -160,7 +172,6 @@
     justify-content: center;
   }
 
-  /* Šípky */
   .prev, .next {
     position: absolute;
     top: 50%;
@@ -180,7 +191,6 @@
     right: 10px;
   }
 
-  /* Slider text – umiestnený v ľavom hornom rohu */
   .slider-text {
     position: absolute;
     top: 20px;
@@ -205,7 +215,6 @@
     opacity: 0.8;
   }
 
-  /* GRID SEZÓN */
   .seasons-container {
     display: flex;
     flex-wrap: wrap;
@@ -231,6 +240,7 @@
     box-shadow: 0 12px 20px rgba(0,0,0,0.15);
   }
   .season-card img {
+    display: block !important;
     width: 100%;
     height: 250px;
     object-fit: cover;

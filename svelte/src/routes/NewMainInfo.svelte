@@ -13,7 +13,6 @@
       if (!res.ok) throw new Error("Nepodarilo sa načítať main_info.");
       const data = await res.json();
       
-      // Naplníme formulár
       town_name = data.town_name;
       description = data.description;
       logo = data.logo;

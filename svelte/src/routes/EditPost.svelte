@@ -1,110 +1,329 @@
 <script>
-  import { onMount, createEventDispatcher } from "svelte";
-  export let goTo; // Pridaj prop goTo, ktorý dostávaš z rodiča
+  import { onMount } from "svelte";
+  import { updatePost } from '../lib/api.js';
 
-  const dispatch = createEventDispatcher();
+  export let postId;
+  export let goTo;
 
-  let town_name = "";
+  let name = "";
   let description = "";
-  let logo = "";
-  let errorMessage = "";
-  let isLoading = true;
+  let postal_code = "";
+  let town = "";
+  let street = "";
+  let descriptive_number = "";
+  let opening_hours = "";
+  let id_season = "";
+  let id_category = "";
+  let url_address = "";
+  let imageFiles = [];
+  let existingImages = [];
 
-  onMount(async () => {
+  let isLoading = true;
+  let errorMessage = "";
+
+  let seasons = [];
+  let categories = [];
+
+  async function fetchSeasons() {
     try {
-      const res = await fetch("http://localhost:8000/api/maininfo");
-      if (!res.ok) throw new Error("Nepodarilo sa načítať údaje.");
-      const data = await res.json();
-      
-      town_name = data.town_name;
-      description = data.description;
-      logo = data.logo;
+      const res = await fetch("http://localhost:8000/api/seasons");
+      if (!res.ok) throw new Error("Nepodarilo sa načítať sezóny");
+      seasons = await res.json();
+    } catch (err) {
+      console.error("Chyba pri načítaní sezón:", err);
+    }
+  }
+
+  async function fetchCategories() {
+    try {
+      const res = await fetch("http://localhost:8000/api/categories");
+      if (!res.ok) throw new Error("Nepodarilo sa načítať kategórie");
+      categories = await res.json();
+    } catch (err) {
+      console.error("Chyba pri načítaní kategórií:", err);
+    }
+  }
+
+  async function fetchPost() {
+    try {
+      const res = await fetch(`http://localhost:8000/api/posts/${postId}`);
+      if (!res.ok) {
+        throw new Error(`Nepodarilo sa načítať príspevok (HTTP ${res.status})`);
+      }
+      const post = await res.json();
+
+      name = post.name || "";
+      description = post.description || "";
+      postal_code = post.address?.postal_code || "";
+      town = post.address?.town?.name || "";
+      street = post.address?.street || "";
+      descriptive_number = post.address?.descriptive_number || "";
+      opening_hours = post.opening_hours || "";
+      id_season = post.id_season || "";
+      id_category = post.id_category || "";
+      url_address = post.url_address || "";
+
+      if (post.gallery && post.gallery.images) {
+        existingImages = post.gallery.images;
+      }
     } catch (err) {
       errorMessage = err.message;
+      console.error("Chyba pri načítaní príspevku:", err);
     } finally {
       isLoading = false;
     }
-  });
+  }
 
-  async function submitForm() {
+  function handleFileChange(e) {
+    imageFiles = Array.from(e.target.files);
+  }
+
+  async function handleUpdate() {
     try {
-      errorMessage = "";
-      const res = await fetch("http://localhost:8000/api/maininfo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ town_name, description, logo })
-      });
-      if (!res.ok) throw new Error("Nepodarilo sa uložiť údaje.");
-      const updatedData = await res.json();
-      
-      town_name = updatedData.town_name;
-      description = updatedData.description;
-      logo = updatedData.logo;
-      
-      dispatch("updateSuccess");
-      alert("Údaje boli úspešne aktualizované!");
-      
-      // Presmerovanie na stránku maininfo
-      goTo("maininfo");
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("description", description);
+      formData.append("postal_code", postal_code);
+      formData.append("town", town);
+      formData.append("street", street);
+      formData.append("descriptive_number", descriptive_number);
+      formData.append("opening_hours", opening_hours);
+      formData.append("id_season", id_season);
+      formData.append("id_category", id_category);
+      formData.append("url_address", url_address);
+
+      for (const file of imageFiles) {
+        formData.append("images[]", file);
+      }
+
+      const updated = await updatePost(postId, formData);
+
+      alert("Príspevok bol aktualizovaný!");
+      goTo("posts");
     } catch (err) {
-      errorMessage = err.message;
+      console.error(err);
+      alert(err.message);
     }
   }
+
+  async function deleteExistingImage(imageId) {
+    if (!confirm("Naozaj chcete vymazať tento obrázok?")) return;
+    try {
+      const res = await fetch(`http://localhost:8000/api/images/${imageId}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Chyba pri mazaní obrázka.");
+      }
+      // Lokálne odfiltruješ vymazaný obrázok
+      existingImages = existingImages.filter(img => img.id !== imageId);
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    }
+  }
+
+
+  onMount(() => {
+    fetchSeasons();
+    fetchCategories();
+    fetchPost();
+  });
 </script>
 
-{#if isLoading}
-  <p>Načítavam údaje...</p>
-{:else}
-  {#if errorMessage}
-    <p style="color: red;">{errorMessage}</p>
-  {/if}
-  <form on:submit|preventDefault={submitForm}>
-    <div>
-      <label for="town_name">Mesto / Názov:</label>
-      <input id="town_name" type="text" bind:value={town_name} required />
-    </div>
-    <div>
-      <label for="description">Popis:</label>
-      <textarea id="description" bind:value={description}></textarea>
-    </div>
-    <div>
-      <label for="logo">Logo (ID):</label>
-      <input id="logo" type="number" bind:value={logo} />
-    </div>
-    <button type="submit">Uložiť zmeny</button>
-  </form>
-{/if}
-
 <style>
-  form {
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+  .form-container {
+    max-width: 800px;
+    margin: 40px auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
     font-family: sans-serif;
+    text-align: center;
   }
-  label {
+
+  .form-group {
+    text-align: left;
+    margin-bottom: 15px;
+  }
+
+  .form-group label {
     display: block;
-    margin-bottom: 4px;
     font-weight: bold;
+    margin-bottom: 6px;
+    color: #555;
   }
-  input, textarea {
+
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
     width: 100%;
-    margin-bottom: 12px;
-    padding: 8px;
+    padding: 12px;
     border: 1px solid #ccc;
-    border-radius: 4px;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: white;
   }
-  button {
-    padding: 10px 20px;
+
+
+  .form-group input:focus,
+  .form-group textarea:focus,
+  .form-group select:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 6px rgba(0, 123, 255, 0.3);
+  }
+
+  .button-group {
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  .custom-button {
+    padding: 12px 24px;
     border: none;
-    background-color: #28a745;
+    border-radius: 30px;
+    font-size: 1rem;
+    font-weight: bold;
     color: #fff;
-    border-radius: 4px;
+    background-color: #2196f3;
     cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
   }
-  button:hover {
-    background-color: #218838;
+
+  .custom-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
   }
+  .back-btn {
+    background-color: #555;
+  }
+  .existing-images {
+    margin: 10px 0;
+    text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+  }
+  .image-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+  .existing-images img {
+    width: 120px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+  }
+  .delete-img-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  
+  width: 24px;
+  height: 24px;
+  background: rgba(220,53,69,0.8); 
+  border: none;
+  border-radius: 4px; /* Mierne zaoblené rohy. Ak chceš ostré, nastav 0. */
+  
+  color: #fff;
+  font-size: 16px;
+  display: flex; 
+  align-items: center;  
+  justify-content: center; 
+  cursor: pointer;
+}
+
 </style>
+
+<div class="form-container">
+  <h1>Upraviť príspevok</h1>
+
+  {#if errorMessage}
+    <p class="error-message">{errorMessage}</p>
+  {/if}
+
+  {#if isLoading}
+    <p>Načítavam príspevok...</p>
+  {:else}
+    <form on:submit|preventDefault={handleUpdate}>
+      <div class="form-group">
+        <label for="name">Názov príspevku:</label>
+        <input id="name" type="text" bind:value={name} required />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Popis:</label>
+        <textarea id="description" rows="3" bind:value={description}></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="postal_code">PSČ:</label>
+        <input id="postal_code" type="text" bind:value={postal_code} required />
+      </div>
+
+      <div class="form-group">
+        <label for="town">Mesto:</label>
+        <input id="town" type="text" bind:value={town} required />
+      </div>
+
+      <div class="form-group">
+        <label for="street">Ulica:</label>
+        <input id="street" type="text" bind:value={street} required />
+      </div>
+
+      <div class="form-group">
+        <label for="descriptive_number">Číslo domu:</label>
+        <input id="descriptive_number" type="text" bind:value={descriptive_number} required />
+      </div>
+
+      <div class="form-group">
+        <label for="id_season">Sezóna:</label>
+        <select id="id_season" bind:value={id_season} required>
+          {#each seasons as season}
+            <option value={season.id}>{season.name}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="id_category">Kategória:</label>
+        <select id="id_category" bind:value={id_category} required>
+          {#each categories as category}
+            <option value={category.id}>{category.name}</option>
+          {/each}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="url_address">URL adresa (web):</label>
+        <input id="url_address" type="text" bind:value={url_address} />
+      </div>
+
+      {#if existingImages.length > 0}
+        <div class="existing-images">
+          {#each existingImages as image}
+            <div class="image-wrapper">
+              <img src={`http://localhost:8000/storage/${image.path}`} alt="Obrázok" />
+              <button type="button" class="delete-image-btn" on:click={() => deleteExistingImage(image.id)}>✕</button>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="form-group">
+        <label for="newImages">Nové obrázky:</label>
+        <input id="newImages" type="file" multiple accept="image/*" on:change={handleFileChange} />
+      </div>
+
+      <div class="button-group">
+        <button type="submit" class="custom-button">Uložiť</button>
+        <button type="button" class="custom-button back-btn" on:click={() => goTo("posts")}>Späť</button>
+      </div>
+    </form>
+  {/if}
+</div>
