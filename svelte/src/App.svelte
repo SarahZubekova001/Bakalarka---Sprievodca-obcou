@@ -28,6 +28,10 @@
   import AddPost from "./routes/NewPost.svelte";
   import EditPost from "./routes/EditPost.svelte";
   import DetailPosts from "./routes/DetailPosts.svelte";
+
+  import Events from "./routes/Events.svelte";
+  import AddEvent from "./routes/NewEvent.svelte";
+  import EditEvent from "./routes/EditEvent.svelte";
   
 
   import { onMount } from "svelte";
@@ -264,6 +268,13 @@
   <NewAdditionalInfo {goTo} {isAuthenticated} {userRole}/>
 {:else if page === "edit-additional-info"}
   <EditAdditionalInfo {goTo} additionalInfoId={currentId}/>
+
+{:else if page === "events"}
+  <Events {goTo} {isAuthenticated} {userRole}/>
+{:else if page === "add-event"}
+  <AddEvent {goTo} {isAuthenticated} {userRole}/>
+{:else if page === "edit-event"}
+  <EditEvent {goTo} {isAuthenticated} {userRole} eventId={currentId}/>
 
 
 {:else if page === "login"}

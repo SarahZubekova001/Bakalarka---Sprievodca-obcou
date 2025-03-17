@@ -90,9 +90,9 @@ class ReviewController extends Controller
         }
         $isAdmin = $request->user() && $request->user()->role === 'admin';
 
-        if ($review->mail !== $request->input('mail') && !$isAdmin) {
-            return response()->json(['message' => 'Nemáte právo zmazať tento komentár.'], 403);
-        }
+        // if ($review->mail !== $request->input('mail') && !$isAdmin) {
+        //     return response()->json(['message' => 'Nemáte právo zmazať tento komentár.'], 403);
+        // }
 
         $review->delete();
         return response()->json(['message' => 'Komentár bol vymazaný.'], 200);

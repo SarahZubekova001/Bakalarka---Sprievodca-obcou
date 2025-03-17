@@ -10,6 +10,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\MainInfoController;
 use App\Http\Controllers\AdditionalInfoController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\EventController;
 use Illuminate\Support\Facades\Route;
 
 // Route::get('/', function () {
@@ -36,4 +37,5 @@ Route::middleware('api')->prefix('api')->group(function () {
     Route::get('/maininfo', [MainInfoController::class, 'showSingle']);
     Route::post('/maininfo', [MainInfoController::class, 'storeOrUpdate']);
     Route::apiResource('additional-info', AdditionalInfoController::class);
+    Route::apiResource('events', EventController::class);
 });

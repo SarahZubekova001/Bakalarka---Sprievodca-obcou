@@ -277,10 +277,18 @@
               {/each}
             </span>
             <p>{review.text}</p>
-            {#if isAuthenticated && (userEmail === review.mail)}
+            {#if isAuthenticated}
+            <!-- Tlačidlo na úpravu - len autor -->
+            {#if userEmail === review.mail}
               <button on:click={() => editReview(review)}>Upraviť</button>
+            {/if}
+
+            <!-- Tlačidlo na vymazanie - autor ALEBO admin -->
+            {#if (userEmail === review.mail) || (userRole === "admin")}
               <button on:click={() => deleteReview(review.id)}>Vymazať</button>
             {/if}
+          {/if}
+
             {#if editingReviewId === review.id}
               <div class="edit-form">
                 <h3>Upraviť recenziu</h3>

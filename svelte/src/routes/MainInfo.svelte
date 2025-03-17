@@ -129,6 +129,11 @@
           <div class="card-content">
             <h4>{item.name}</h4>
             <p>{item.text}</p>
+            {#if item.address}
+              <p class="card-address">
+                {item.address.street} {item.address.descriptive_number}, {item.address.postal_code} {item.address.town_name}
+              </p>
+            {/if}
             {#if userRole === "admin"}
               <div class="actions">
                 <button on:click={() => editAdditionalInfo(item.id)}>Upraviť</button>
@@ -283,6 +288,12 @@
     font-size: 1rem;
     line-height: 1.4;
   }
+  .card-address {
+  font-size: 0.95rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
 
   .actions {
     display: flex;

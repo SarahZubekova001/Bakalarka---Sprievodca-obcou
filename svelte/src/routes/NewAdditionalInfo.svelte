@@ -5,6 +5,10 @@
 
   let name = "";
   let text = "";
+  let postal_code = "";
+  let town = "";
+  let street = "";
+  let descriptive_number = "";
   let imageFile = null;
   let errorMessage = "";
   let isSubmitting = false;
@@ -19,10 +23,13 @@
       const formData = new FormData();
       formData.append("name", name);
       formData.append("text", text);
+      formData.append("postal_code", postal_code);
+      formData.append("town", town);
+      formData.append("street", street);
+      formData.append("descriptive_number", descriptive_number);
       if (imageFile) {
         formData.append("image_file", imageFile);
       }
-
       await createAdditionalInfo(formData);
       alert("Záznam vytvorený!");
       goTo("maininfo");
@@ -45,6 +52,18 @@
 
     <label for="text">Popis</label>
     <textarea id="text" bind:value={text} rows="4"></textarea>
+
+    <label for="postal_code">PSČ</label>
+    <input id="postal_code" type="text" bind:value={postal_code} required />
+
+    <label for="town">Mesto</label>
+    <input id="town" type="text" bind:value={town} required />
+
+    <label for="street">Ulica</label>
+    <input id="street" type="text" bind:value={street} required />
+
+    <label for="descriptive_number">Číslo domu</label>
+    <input id="descriptive_number" type="text" bind:value={descriptive_number} required />
 
     <label for="image_file">Obrázok (voliteľné)</label>
     <input id="image_file" type="file" accept="image/*" on:change={handleFileChange} />
