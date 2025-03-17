@@ -22,6 +22,10 @@ class Image extends Model
     {
         return $this->hasOne(Season::class, 'id_image')->onDelete('set null');
     }
+    public function event()
+    {
+        return $this->hasOne(Event::class, 'id_image')->onDelete('set null');
+    }
 
 
     public function gallery()
